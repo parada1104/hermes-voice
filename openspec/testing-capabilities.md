@@ -7,7 +7,6 @@
 
 - `daemon/`: `cd daemon && node --test` (built-in Node.js test runner, CommonJS). Verified: 378 tests passing, 0 failing.
 - `app/`: `cd app && node --test ui/lib/*.test.js` (built-in Node.js test runner). Verified: 12 tests passing, 0 failing.
-- `HermesVoice/`: no test target defined in `Package.swift` (no XCTest target present).
 
 ### Test Layers
 
@@ -35,4 +34,4 @@
 ### Notes
 
 - No root-level `package.json`; `daemon/` and `app/` are independent Node packages, each with their own `package.json` and `node_modules/`.
-- Swift package (`HermesVoice/`) builds with `swift build` but has no automated test target; adding one is a candidate follow-up if SwiftUI logic grows.
+- The SwiftUI companion (`HermesVoice/`) was removed on 2026-08-26: it drove the old Hermes TUI over a PTY, an architecture superseded by the Node daemon. The Electron app is the only client.

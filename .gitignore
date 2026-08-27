@@ -8,9 +8,5 @@ node_modules/
 # Registro de skills: se regenera solo
 .atl/
 
-# Artefactos de build de Swift
-.build/
-HermesVoice/.build/
-
 # Sistema
 .DS_Store

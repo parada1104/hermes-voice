@@ -2,11 +2,10 @@
 schema: spec-driven
 
 context: |
-  Hermes Voice: hybrid chat+voice layer over agents (Electron + Node daemon + SwiftUI companion).
+  Hermes Voice: hybrid chat+voice layer over agents (Electron app + Node daemon).
   daemon/: Node.js CommonJS daemon (VAD -> STT(oMLX) -> conversational layer -> TTS(oMLX)),
     WS/REST server on :8471, delegates heavy work to Hermes agent API (:8642, /v1/runs).
   app/: Electron shell + vanilla HTML/JS UI (app/ui) talking to the daemon.
-  HermesVoice/: SwiftUI macOS companion (SwiftPM, no XCTest target yet).
   Source of truth docs: BRIEF.md, IDEA.md, ARCHITECTURE.md, REQUIREMENTS.md (R1..R8).
   Strict TDD is enabled for this project: tests are written before implementation.
   Current roadmap: realtime capture step 1 (silence-based) done; step 2 (incremental STT)
@@ -25,10 +24,10 @@ rules:
   tasks:
     - Group by phase, use hierarchical numbering
     - Keep tasks completable in one session
-    - Split daemon/, app/, and HermesVoice/ changes into separate reviewable units when they diverge
+    - Split daemon/ and app/ changes into separate reviewable units when they diverge
   apply:
     guidelines:
-      - Follow existing code patterns (CommonJS in daemon/, vanilla JS in app/ui, SwiftUI in HermesVoice/)
+      - Follow existing code patterns (CommonJS in daemon/, vanilla JS in app/ui)
       - Strict TDD: write a failing test first, then implement
     tdd: true
     test_command: "cd daemon && node --test"
