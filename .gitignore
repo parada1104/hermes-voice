@@ -1,0 +1,16 @@
+# Dependencias — se reinstalan desde los lockfiles
+node_modules/
+
+# Backups pre-git: el historial los reemplaza
+*.bak
+*.bak-*
+
+# Registro de skills: se regenera solo
+.atl/
+
+# Artefactos de build de Swift
+.build/
+HermesVoice/.build/
+
+# Sistema
+.DS_Store
