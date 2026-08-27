@@ -2,25 +2,70 @@
 schema: spec-driven
 
 context: |
-  Hermes Voice: hybrid chat+voice layer over agents (Electron app + Node daemon).
-  daemon/: Node.js CommonJS daemon (VAD -> STT(oMLX) -> conversational layer -> TTS(oMLX)),
-    WS/REST server on :8471, delegates heavy work to Hermes agent API (:8642, /v1/runs).
-  app/: Electron shell + vanilla HTML/JS UI (app/ui) talking to the daemon.
-  Source of truth docs: BRIEF.md, IDEA.md, ARCHITECTURE.md, REQUIREMENTS.md (R1..R8).
-  Strict TDD is enabled for this project: tests are written before implementation.
-  Current roadmap: realtime capture step 1 (silence-based) done; step 2 (incremental STT)
-    and step 3 (richer GUI state) are next.
+  Hermes Voice: a standalone hybrid chat+voice layer over coding agents ("Codex lite").
+  A lightweight conversational model holds the dialogue and delegates real work to a
+  heavy agent. Two components, no third:
+    app/    Electron shell + vanilla HTML/JS UI (app/ui) — the only client.
+    daemon/ Node.js CommonJS daemon, WS/REST on :8471 — owns the voice pipeline,
+            the sessions and the delegation cascade.
+
+  Voice pipeline (daemon/connector.js):
+    mic -> silence-based VAD (browser side) -> STT (oMLX whisper) ->
+    conversational layer (decides answer vs delegate) -> TTS (oMLX, fixed cloned voice).
+  The conversational layer is provider-portable (daemon/capa.js). It currently runs on
+  nan-builders/qwen3.8-flash with thinking disabled; the provider, model and key are
+  configurable and MUST stay swappable — model choice here is measured, not assumed.
+
+  Delegation to the `hermes` agent is a three-step cascade, in this order:
+    1. PRIMARY   live Orca worker REPL (daemon/worker.js + daemon/orca.js). Keeps the
+                 agent thread warm, avoids cold starts, stays visible to the user. The
+                 agent's answer is read from Hermes' SQLite state.db
+                 (daemon/store-hermes.js), NOT by scraping the TTY.
+    2. FALLBACK  headless Hermes CLI — used when Orca is unavailable, or when the turn
+                 carries an attachment (needs the one-shot `chat --image`).
+    3. LAST      POST /v1/runs on the Hermes API server :8642 — only for sessions with
+                 no profile. This is not the main path; do not design against it.
+  Other agents: `pi` (own harness, working-dir scoped). `orca` is infrastructure that
+  runs workers, not a conversational agent.
+
+  Sessions: each voice session owns its own thread. Agent conversations are NOT that
+  thread — they are its delegated tasks, rendered as nested collapsible runs. Voice and
+  chat are two distinct histories that never flatten into one.
+
+  Routing discipline (answer vs delegate) lives in CODE and in a single native tool
+  call, not in prompt prose alone. Keep the toolset minimal: small models degrade fast
+  as tools multiply.
+
+  Strict TDD is enabled for this project: write the failing test first, then implement.
+
+  Roadmap: realtime capture step 1 (silence-based cut) is done; step 2 (incremental
+  STT) and step 3 (richer GUI state) are next.
+
+  Source-of-truth docs, by authority:
+    REQUIREMENTS.md  CURRENT product contract. Requirements R1..R8. Cite these.
+    IDEA.md          CURRENT north star and rationale.
+    ARCHITECTURE.md  HISTORICAL (2026-08-24). Superseded on two points: it names
+                     POST /v1/runs as the delegation path and Cerebras as the layer.
+                     Read it as history, never as current design.
+    BRIEF.md         HISTORICAL (2026-08-17). Describes a Hermes Desktop runtime
+                     plugin skeleton with fake data. That framing is superseded: this
+                     is a standalone Electron app with real audio, model and
+                     delegation. Its "design decisions already made" section is still
+                     useful; its scope section is not.
+  A SwiftUI companion app existed and was removed on 2026-08-26.
 
 rules:
   proposal:
     - Include rollback plan for risky changes
     - Reference the relevant requirement IDs (R1..R8) from REQUIREMENTS.md when applicable
+    - Verify any architectural claim against the code before restating it from ARCHITECTURE.md or BRIEF.md
   specs:
     - Use Given/When/Then for scenarios
     - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
   design:
-    - Include sequence diagrams for complex flows (daemon <-> UI <-> Hermes agent API)
+    - Include sequence diagrams for complex flows (UI <-> daemon <-> Orca worker <-> Hermes store)
     - Document architecture decisions with rationale
+    - State which delegation path a change affects (Orca worker, headless CLI, or /v1/runs)
   tasks:
     - Group by phase, use hierarchical numbering
     - Keep tasks completable in one session
@@ -29,6 +74,7 @@ rules:
     guidelines:
       - Follow existing code patterns (CommonJS in daemon/, vanilla JS in app/ui)
       - Strict TDD: write a failing test first, then implement
+      - Provider-specific request fields belong in daemon/capa.js, never hardcoded in the request body
     tdd: true
     test_command: "cd daemon && node --test"
   verify:
