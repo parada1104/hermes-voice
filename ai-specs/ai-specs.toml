@@ -157,3 +157,4 @@ enabled = true
 decisions_folder = "decisiones"
 sessions_folder = "sessions"
 # vault_scope = ""  # optional
+vault_scope = "engineering/hermes-voice"

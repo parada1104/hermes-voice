@@ -6,6 +6,7 @@
 - **Enabled runtimes**: `claude`, `cursor`, `opencode`
 - **Integration branch**: `main`
 - **Repo topology**: `standalone` (via auto)
+- **Vault scope**: `engineering/hermes-voice`
 
 ## Runtime MCPs
 
