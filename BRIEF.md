@@ -45,7 +45,7 @@ collapsed by default:
 
 ```
 Voice thread (owned by this plugin)
-├─ user:  "how is the Venturi board doing"
+├─ user:  "how is the project board doing"
 ├─ agent: "give me a second"
 │         ▸ Hermes · 4 tools · 12s        ← nested, collapsed, expandable
 └─ agent: "there are 4 tickets in review..."

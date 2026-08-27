@@ -59,12 +59,12 @@
             <Rectangle name="vpane/transcript/user/avatar" x={0} y={0} w={24} h={24} fill="#3A3F4B" rounded={7} />
             <Text name="vpane/transcript/user/avatar-leaf" x={8} y={5} size={11} weight={600} color="#FFFFFF">R</Text>
             <Text name="vpane/transcript/user/who" x={34} y={0} size={10} weight={500} color="#646A72">Robert · 14:02</Text>
-            <Text name="vpane/transcript/user/body" x={34} y={18} size={12} weight={400} color="#9AA0AA">Etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, papel kraft, tipografía limpia.</Text>
+            <Text name="vpane/transcript/user/body" x={34} y={18} size={12} weight={400} color="#9AA0AA">Etiqueta de café para Aurora — "Reserva del Valle". Tono minimal, papel kraft, tipografía limpia.</Text>
           </Frame>
           <Frame name="vpane/transcript/hermes-a" x={18} y={86} w={348} h={54} p={0}>
             <Rectangle name="vpane/transcript/hermes-a/avatar" x={0} y={0} w={24} h={24} fill="#D97A3F" rounded={7} />
             <Text name="vpane/transcript/hermes-a/who" x={34} y={0} size={10} weight={500} color="#646A72">Hermes Voice · hace 2 min</Text>
-            <Text name="vpane/transcript/hermes-a/body" x={34} y={18} size={12} weight={400} color="#9AA0AA">Perfecto. Delego a Orca: brief kraft minimal para Reserva Los Ríos. Ya está generando.</Text>
+            <Text name="vpane/transcript/hermes-a/body" x={34} y={18} size={12} weight={400} color="#9AA0AA">Perfecto. Delego a Orca: brief kraft minimal para Reserva del Valle. Ya está generando.</Text>
           </Frame>
           <Frame name="vpane/transcript/hermes-b" x={18} y={150} w={348} h={50} p={0}>
             <Rectangle name="vpane/transcript/hermes-b/avatar" x={0} y={0} w={24} h={24} fill="#D97A3F" rounded={7} />
@@ -115,7 +115,7 @@
           <Text name="cpane/msg-user/time" x={446} y={0} size={10} weight={400} color="#4A5057">14:02</Text>
         </Frame>
         <Frame name="cpane/msg-user/bubble" x={94} y={24} w={386} h={50} bg="#1B1E24" rounded={15} p={0} shadow="0 1 2 rgba(0,0,0,0.3)">
-          <Text name="cpane/msg-user/bubble/text" x={16} y={12} size={13} weight={400} color="#F4F5F6">Etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, kraft, tipografía limpia.</Text>
+          <Text name="cpane/msg-user/bubble/text" x={16} y={12} size={13} weight={400} color="#F4F5F6">Etiqueta de café para Aurora — "Reserva del Valle". Tono minimal, kraft, tipografía limpia.</Text>
         </Frame>
       </Frame>
 
@@ -123,7 +123,7 @@
       <Frame name="cpane/deleg" x={236} y={158} w={598} h={180} bg="#14161A" rounded={14} p={0} shadow="0 1 2 rgba(0,0,0,0.3)">
         <Frame name="cpane/deleg/head" x={0} y={0} w={598} h={44} p={0}>
           <Text name="cpane/deleg/head/ico" x={14} y={16} size={14} weight={400} color="#A58AF0">◈</Text>
-          <Text name="cpane/deleg/head/title" x={36} y={13} size={13} weight={500} color="#F4F5F6">Etiqueta Reserva Los Ríos</Text>
+          <Text name="cpane/deleg/head/title" x={36} y={13} size={13} weight={500} color="#F4F5F6">Etiqueta Reserva del Valle</Text>
           <Frame name="cpane/deleg/head/agent" x={186} y={12} w={70} h={20} bg="#A58AF01A" rounded={6} p={0}>
             <Text name="cpane/deleg/head/agent-label" x={8} y={4} size={10} weight={500} color="#A58AF0">orca-7b</Text>
           </Frame>
@@ -135,7 +135,7 @@
         <Rectangle name="cpane/deleg/divider" x={0} y={44} w={598} h={1} fill="#16181C" />
         <Frame name="cpane/deleg/body" x={0} y={45} w={598} h={135} p={0}>
           <Text name="cpane/deleg/body/brief-key" x={16} y={18} size={11} weight={500} color="#4A5057">brief</Text>
-          <Text name="cpane/deleg/body/brief-val" x={110} y={18} size={12} weight={400} color="#9AA0AA">Etiqueta café kraft minimal "RESERVA LOS RÍOS", tipografía limpia, estética Venturi.</Text>
+          <Text name="cpane/deleg/body/brief-val" x={110} y={18} size={12} weight={400} color="#9AA0AA">Etiqueta café kraft minimal "RESERVA DEL VALLE", tipografía limpia, estética Aurora.</Text>
           <Text name="cpane/deleg/body/flujo-key" x={16} y={44} size={11} weight={500} color="#4A5057">flujo</Text>
           <Text name="cpane/deleg/body/flujo-val" x={110} y={44} size={12} weight={400} color="#9AA0AA">flux2 → compositing → etiqueta</Text>
           <Frame name="cpane/deleg/body/term" x={16} y={72} w={566} h={48} bg="#0B0C0E" rounded={8} p={0}>

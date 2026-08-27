@@ -1,7 +1,7 @@
 // Tests del perfil default (la raíz ~/.hermes) y de las capacidades por perfil.
 //
 // Dos agujeros reales: el Hermes por defecto —el único con el MCP de Trello de
-// Venturi— no era seleccionable, y la capa conversacional no sabía qué
+// Aurora— no era seleccionable, y la capa conversacional no sabía qué
 // herramientas tiene cada perfil, así que delegaba a ciegas un pedido de Trello
 // al coach de Pokémon.
 const test = require('node:test')
@@ -15,13 +15,13 @@ const CONFIG_RAIZ = `model:
 mcp_servers:
   samsung-tv:
     args:
-      - /Users/robert/.hermes/scripts/samsung-tv-mcp.py
+      - /home/user/.hermes/scripts/samsung-tv-mcp.py
     command: python3
     timeout: 30
   trello:
     args:
       - -lc
-      - set -a; source /Users/robert/proyectos/venturi/.env; exec npx
+      - set -a; source /home/user/proyectos/example/.env; exec npx
         -y @delorenj/mcp-server-trello
     command: /bin/bash
     timeout: 120

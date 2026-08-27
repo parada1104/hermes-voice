@@ -780,7 +780,7 @@ function emptyState(){
     <div class="tt">Sin mensajes aún</div>
     <div class="ss">Mantén pulsado el micrófono o escribe. Si hace falta, delego en un agente y te lo resumo hablando.</div>
     <div class="chips"></div>`
-  const chips=['revisa el tablero de Venturi','resumen de pendientes hoy','quién eres']
+  const chips=['revisa el tablero de Aurora','resumen de pendientes hoy','quién eres']
   const c=e.querySelector('.chips')
   chips.forEach(t=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=t; b.addEventListener('click',()=>enviarTexto(t)); c.appendChild(b) })
   chatInner.appendChild(e)

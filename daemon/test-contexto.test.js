@@ -69,11 +69,11 @@ test('ignora ficheros sueltos: una skill es un directorio', () => {
 /* ── cwd y descripción ── */
 
 test('extrae la ruta de trabajo de terminal.cwd', () => {
-  assert.strictEqual(rutaTrabajoDeConfig('agent:\n  max_turns: 60\nterminal:\n  cwd: /Users/robert/vault\n'), '/Users/robert/vault')
+  assert.strictEqual(rutaTrabajoDeConfig('agent:\n  max_turns: 60\nterminal:\n  cwd: /home/user/vault\n'), '/home/user/vault')
 })
 
 test('acepta rutas con espacios sin comillas', () => {
-  assert.strictEqual(rutaTrabajoDeConfig('terminal:\n  cwd: /Users/robert/Mobile Documents/hermes-vault\n'), '/Users/robert/Mobile Documents/hermes-vault')
+  assert.strictEqual(rutaTrabajoDeConfig('terminal:\n  cwd: /home/user/Mobile Documents/hermes-vault\n'), '/home/user/Mobile Documents/hermes-vault')
 })
 
 test('devuelve cadena vacía si no hay terminal.cwd', () => {

@@ -3,7 +3,7 @@
  *
  * Hermes tiene un perfil raíz (`~/.hermes`, el que corre cuando NO se pasa
  * `--profile`) que no vive bajo `profiles/`. Es justo el que tiene el MCP de
- * Trello de Venturi, y no aparecía en el selector: no había forma de delegarle
+ * Trello de Aurora, y no aparecía en el selector: no había forma de delegarle
  * nada desde la app.
  *
  * Y como la capa conversacional no sabía qué herramientas tiene cada perfil,

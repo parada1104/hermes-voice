@@ -141,7 +141,7 @@
   <div class="drawer" id="drawer">
     <div class="dr-head">Transcripción<span class="x" id="drClose">✕</span></div>
     <div class="dr-body">
-      <div class="dr-line hermes"><div class="who">✓ Hermes Voice <span class="tm">—</span></div>Perfecto, Robert. Delego a Orca: brief kraft minimal para Reserva Los Ríos.</div>
+      <div class="dr-line hermes"><div class="who">✓ Hermes Voice <span class="tm">—</span></div>Perfecto, Robert. Delego a Orca: brief kraft minimal para Reserva del Valle.</div>
       <div class="dr-line"><div class="who">Orca · comfyui</div>queued #182 → sampling 64% · 18s</div>
       <div class="dr-line hermes"><div class="who">✓ Hermes Voice <span class="tm">—</span></div>Ya casi está, Señor. El agente va al 64%.</div>
       <div class="dr-line"><div class="who">Orca · reset</div>etiqueta_reserva_v2.png · 1024×1024 · validado vs referente</div>
@@ -168,7 +168,7 @@
     sub.textContent=subs[i];
     chips.forEach((el,idx)=>{el.classList.toggle('on',idx===i||(i===1&&idx===1));el.classList.toggle('pass',idx<i);});
     if(i===0){stage.classList.add('listen','stage-listen');mic.classList.remove('mute');live.innerHTML='<span class="cur">Etiqueta de café pa</span>';lm.textContent='transcripción en vivo · 0:14';}
-    if(i===1){mic.classList.remove('mute');live.innerHTML='Entendido: etiqueta kraft minimal para <span class="cur">Reserva Los Ríos</span>.';lm.textContent='interpretando · delegando';}
+    if(i===1){mic.classList.remove('mute');live.innerHTML='Entendido: etiqueta kraft minimal para <span class="cur">Reserva del Valle</span>.';lm.textContent='interpretando · delegando';}
     if(i===2){stage.classList.add('speak','stage-speak');mic.classList.add('mute');live.innerHTML='Ya casi está, Señor. El agente va al 64%.';lm.textContent='voz sincronizada';}
   }
   mic.addEventListener('click',()=>setPh((ph+1)%3));
