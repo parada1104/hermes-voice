@@ -3,7 +3,7 @@
 ## Project
 
 - **Project**: `hermes-voice`
-- **Enabled runtimes**: `claude`, `cursor`, `opencode`
+- **Enabled runtimes**: `claude`, `cursor`, `opencode`, `pi`
 - **Integration branch**: `main`
 - **Repo topology**: `standalone` (via auto)
 - **Vault scope**: `engineering/hermes-voice`
