@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Focus · A (split panel)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:#0b0c0e; --surface:#14161a; --surface2:#1b1e24; --surface3:#20232a;
+    --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+    --text:#f4f5f6; --text2:#9aa0aa; --text3:#646a72; --text4:#4a5057;
+    --accent:#d97a3f; --accent2:#f0905c; --green:#2fbf8f; --amber:#eab04c;
+    --blue:#6aa6e8; --violet:#a58af0;
+    --font:'Inter',system-ui,-apple-system,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --r-s:7px; --r-m:10px; --r-l:14px; --r-xl:16px;
+    --sh-1:0 1px 2px rgba(0,0,0,.30), 0 0 0 1px rgba(255,255,255,.03);
+    --sh-2:0 12px 32px -12px rgba(0,0,0,.72);
+    --sh-3:0 28px 64px -20px rgba(0,0,0,.85);
+    --t:150ms cubic-bezier(.2,.6,.2,1);
+  }
+
+  html,body{height:100%;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);
+    height:100vh;overflow:hidden;font-size:14px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    font-feature-settings:'liga' 1,'calt' 1,'cv11' 1;}
+
+  /* ---- base line icons (stroke 1.5, geometric) ---- */
+  .ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;
+    stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .ic-s{width:14px;height:14px;}
+  .ic-18{width:18px;height:18px;}
+  .ic-20{width:20px;height:20px;}
+  .ic-24{width:24px;height:24px;}
+  /* mic inside gradient surfaces: force line rendering, independent of .ic */
+  .mic-svg{stroke:currentColor;fill:none;stroke-width:1.5;
+    stroke-linecap:round;stroke-linejoin:round;}
+
+  .app{display:flex;flex-direction:column;height:100vh;}
+
+  /* ================= HEADER ================= */
+  .header{display:flex;align-items:center;gap:16px;height:58px;padding:0 18px;
+    flex:0 0 58px;background:rgba(11,12,14,.82);border-bottom:1px solid var(--border);
+    backdrop-filter:blur(14px);z-index:20;}
+  .logo{display:flex;align-items:center;gap:11px;user-select:none;}
+  .logo-mark{width:30px;height:30px;border-radius:9px;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    display:grid;place-items:center;box-shadow:0 4px 14px -4px rgba(217,122,63,.55),
+    inset 0 1px 0 rgba(255,255,255,.25);}
+  .logo-name{font-weight:600;font-size:15px;letter-spacing:-.011em;line-height:1.1;}
+  .logo-sub{font-family:var(--mono);font-size:10.5px;color:var(--text3);font-weight:400;
+    letter-spacing:.02em;margin-top:1px;}
+  .h-space{flex:1;}
+
+  /* segmented mode control */
+  .seg{display:flex;align-items:center;gap:2px;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--r-m);padding:3px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.02);}
+  .seg .s{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
+    font-size:12.5px;font-weight:500;color:var(--text3);cursor:pointer;
+    white-space:nowrap;user-select:none;transition:color var(--t),background var(--t),box-shadow var(--t);}
+  .seg .s .ic{width:13px;height:13px;opacity:.9;}
+  .seg .s:hover{color:var(--text2);}
+  .seg .s:focus-visible{outline:2px solid rgba(217,122,63,.45);outline-offset:1px;}
+  .seg .s.on{background:var(--surface3);color:var(--text);box-shadow:var(--sh-1);}
+
+  /* agent selector */
+  .agent-btn{display:flex;align-items:center;gap:8px;background:var(--surface);
+    border:1px solid var(--border2);border-radius:var(--r-m);padding:6px 11px;
+    cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);
+    transition:border-color var(--t),color var(--t),background var(--t),box-shadow var(--t);}
+  .agent-btn:hover{border-color:rgba(217,122,63,.45);color:var(--text);}
+  .agent-btn .d{width:6px;height:6px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 6px var(--green);}
+  .agent-btn .chev{color:var(--text3);transition:color var(--t);}
+  .agent-btn:hover .chev{color:var(--text);}
+
+  .h-right{display:flex;align-items:center;gap:9px;}
+  /* status pill */
+  .h-stat{display:flex;align-items:center;gap:8px;padding:5px 12px;
+    border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--text3);
+    font-weight:500;background:var(--surface);white-space:nowrap;}
+  .h-stat .d{width:6px;height:6px;border-radius:50%;background:var(--accent2);
+    box-shadow:0 0 8px var(--accent2);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ================= BODY SPLIT ================= */
+  .body{flex:1;display:flex;min-height:0;}
+
+  /* ---- VOICE PANE ---- */
+  .vpane{width:384px;flex:0 0 384px;background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;min-height:0;}
+
+  .vp-head{display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px 12px;gap:10px;}
+  .vp-title{font-size:10.5px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.09em;color:var(--text4);white-space:nowrap;}
+  .vp-title .st{color:var(--accent2);}
+  .vp-head-r{display:flex;align-items:center;gap:10px;}
+
+  /* collapse sidebar icon button */
+  .icon-btn{width:28px;height:28px;border-radius:8px;border:1px solid transparent;
+    background:transparent;color:var(--text4);display:grid;place-items:center;
+    cursor:pointer;transition:color var(--t),background var(--t),border-color var(--t);}
+  .icon-btn:hover{color:var(--text2);background:var(--surface2);border-color:var(--border);}
+  .icon-btn:focus-visible{outline:2px solid rgba(217,122,63,.45);outline-offset:1px;}
+
+  /* the voice orb */
+  .vp-orb{width:46px;height:46px;border-radius:50%;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    display:grid;place-items:center;
+    box-shadow:0 0 0 6px rgba(217,122,63,.07),0 8px 22px -8px rgba(217,122,63,.55),
+    inset 0 1px 0 rgba(255,255,255,.25);transition:box-shadow var(--t),transform var(--t);}
+  .vp-orb.listen{animation:orb-blue 2s infinite;}
+  .vp-orb.speak{animation:orb-acc 1.2s infinite;}
+  @keyframes orb-blue{0%,100%{box-shadow:0 0 0 6px rgba(106,166,232,.12),0 8px 22px -8px rgba(217,122,63,.5)}50%{box-shadow:0 0 0 16px rgba(106,166,232,.04),0 8px 22px -8px rgba(217,122,63,.35)}}
+  @keyframes orb-acc{0%,100%{box-shadow:0 0 0 6px rgba(240,144,92,.14),0 8px 22px -8px rgba(217,122,63,.6)}50%{box-shadow:0 0 0 18px rgba(240,144,92,.04),0 8px 22px -8px rgba(217,122,63,.4)}}
+
+  /* live transcript */
+  .vp-live{flex:1;overflow-y:auto;padding:10px 18px;display:flex;flex-direction:column;gap:12px;}
+  .live-line{font-size:13.5px;line-height:1.6;color:var(--text2);}
+  .live-line .me{color:var(--text);font-weight:500;}
+  .live-line .partial{color:var(--text3);}
+  .live-line .cur{color:var(--accent2);}
+  .caret{display:inline-block;width:2px;height:14px;background:var(--accent2);vertical-align:-2px;
+    border-radius:1px;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0}}
+  .live-time{font-family:var(--mono);font-size:10px;color:var(--text4);
+    letter-spacing:.02em;font-variant-numeric:tabular-nums;}
+
+  .vp-transcript{border-top:1px solid var(--border);margin-top:6px;padding-top:12px;
+    display:flex;flex-direction:column;gap:11px;}
+  .vt-row{display:flex;gap:10px;font-size:12.5px;}
+  .vt-row .av{width:24px;height:24px;border-radius:7px;flex:0 0 24px;display:grid;
+    place-items:center;color:#fff;font-weight:600;font-size:11px;box-shadow:var(--sh-1);}
+  .vt-row.user .av{background:linear-gradient(135deg,#3a3f4b,#4a5060);}
+  .vt-row.hermes .av{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .vt-row.hermes .av .ic{width:12px;height:12px;}
+  .vt-row .tb{flex:1;min-width:0;}
+  .vt-row .who{font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:500;
+    letter-spacing:.01em;}
+  .vt-row .who .tm{float:right;font-family:var(--mono);color:var(--text4);
+    font-variant-numeric:tabular-nums;font-size:9.5px;letter-spacing:0;}
+  .vt-row .bd{color:var(--text2);line-height:1.55;}
+
+  /* phases as vertical stepper */
+  .vp-steps{display:flex;flex-direction:column;gap:6px;padding:12px 16px 16px;
+    border-top:1px solid var(--border);}
+  .vp-step{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--r-m);
+    border:1px solid var(--border);background:var(--bg);position:relative;
+    transition:all var(--t);cursor:default;}
+  .vp-step:hover{border-color:var(--border2);}
+  .vp-step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+    font-size:10.5px;font-weight:600;font-family:var(--mono);background:var(--surface2);
+    color:var(--text4);flex:0 0 22px;transition:background var(--t),color var(--t);}
+  .vp-step .l{font-size:12.5px;font-weight:500;color:var(--text3);transition:color var(--t);}
+  .vp-step .d{display:flex;align-items:flex-end;gap:2px;height:12px;margin-left:auto;}
+  .vp-step .d span{width:3px;border-radius:2px;background:var(--accent2);}
+  .vp-step .d span:nth-child(1){height:40%}.vp-step .d span:nth-child(2){height:100%}
+  .vp-step .d span:nth-child(3){height:70%}.vp-step .d span:nth-child(4){height:95%}
+  .vp-step .done-check{width:16px;height:16px;color:var(--green);display:none;margin-left:auto;}
+  .vp-step.on{border-color:rgba(217,122,63,.4);background:var(--surface2);}
+  .vp-step.on .n{background:var(--accent);color:#fff;box-shadow:0 0 8px rgba(217,122,63,.45);}
+  .vp-step.on .l{color:var(--text);}
+  .vp-step.done .n{background:var(--surface3);color:var(--text2);}
+  .vp-step.done .l{color:var(--text3);}
+  .vp-step.done .d{display:none;}
+  .vp-step.done .done-check{display:block;}
+
+  /* ================= CHAT PANE ================= */
+  .cpane{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;}
+
+  .chat-scroll{flex:1;overflow-y:auto;padding:22px 0 130px;}
+  .chat-inner{max-width:620px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:18px;}
+  .day-div{display:flex;align-items:center;gap:14px;font-size:11px;color:var(--text4);
+    font-weight:500;letter-spacing:.01em;}
+  .day-div::before,.day-div::after{content:"";flex:1;height:1px;background:var(--border);}
+
+  .msg{display:flex;flex-direction:column;}
+  .msg.me{align-items:flex-end;}
+  .msg .who{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);
+    margin-bottom:6px;font-weight:500;letter-spacing:.01em;}
+  .msg .who .wa{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;color:#fff;
+    box-shadow:var(--sh-1);}
+  .msg.me .who .wa{background:linear-gradient(135deg,#3a3f4b,#4a5060);color:#fff;font-size:10px;font-weight:600;}
+  .msg.agent .who .wa{background:linear-gradient(135deg,#23262e,#2c303a);color:var(--violet);}
+  .msg.agent .who .wa .ic{width:11px;height:11px;}
+  .msg .who .nm{font-weight:500;color:var(--text2);}
+  .msg .who .tm{font-family:var(--mono);font-size:9.5px;color:var(--text4);
+    font-variant-numeric:tabular-nums;letter-spacing:0;}
+
+  .bubble{max-width:76%;border-radius:15px;padding:11px 15px;font-size:13.5px;
+    line-height:1.62;letter-spacing:-.004em;}
+  .msg.me .bubble{background:var(--surface2);border:1px solid var(--border2);
+    border-bottom-right-radius:6px;box-shadow:var(--sh-1);}
+  .msg.agent .bubble{background:rgba(255,255,255,.028);border:1px solid var(--border);
+    border-bottom-left-radius:6px;}
+
+  /* delegation card */
+  .deleg{max-width:82%;border:1px solid var(--border);border-radius:var(--r-l);
+    background:var(--surface);overflow:hidden;font-size:13px;box-shadow:var(--sh-1);}
+  .dhead{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;
+    transition:background var(--t);user-select:none;}
+  .dhead:hover{background:var(--surface2);}
+  .dhead .ico{width:16px;height:16px;color:var(--violet);}
+  .dhead .t{font-weight:500;letter-spacing:-.004em;}
+  .dhead .ag{font-family:var(--mono);font-size:10px;color:var(--violet);
+    background:rgba(165,138,240,.1);padding:2px 8px;border-radius:6px;font-weight:500;}
+  .dhead .st{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;}
+  .dhead .st .dot{width:6px;height:6px;border-radius:50%;}
+  .dhead .st.run{color:var(--amber);}
+  .dhead .st.run .dot{background:var(--amber);box-shadow:0 0 7px var(--amber);animation:pulse 1.4s infinite;}
+  .dhead .chev{margin-left:10px;color:var(--text4);transition:transform var(--t),color var(--t);}
+  .deleg.open .dhead .chev{transform:rotate(180deg);color:var(--text2);}
+  .dbody{display:none;padding:0 14px 14px;gap:10px;flex-direction:column;}
+  .deleg.open .dbody{display:flex;}
+  .dline{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--text2);}
+  .dline .k{font-family:var(--mono);font-size:11px;color:var(--text4);width:40px;flex:0 0 40px;margin-top:1px;}
+  .dline .v{flex:1;}
+  .mini-term{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    padding:9px 12px;font-family:var(--mono);font-size:12px;color:var(--text3);line-height:1.7;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.02);}
+  .mini-term .ln{display:block;}
+  .mini-term .p{color:var(--green);}.mini-term .c{color:var(--blue);}.mini-term .o{color:var(--text2);}
+
+  /* ================= COMPOSER ================= */
+  .composer-wrap{position:absolute;bottom:16px;left:0;right:0;padding:0 24px;
+    display:flex;justify-content:center;pointer-events:none;}
+  .composer{pointer-events:auto;width:100%;max-width:660px;background:rgba(20,22,26,.92);
+    backdrop-filter:blur(18px);border:1px solid var(--border2);border-radius:18px;
+    box-shadow:var(--sh-3),inset 0 1px 0 rgba(255,255,255,.035);padding:12px 14px;
+    display:flex;align-items:flex-end;gap:10px;transition:border-color var(--t),box-shadow var(--t);}
+  .composer:focus-within{border-color:rgba(217,122,63,.35);}
+  .composer textarea{flex:1;background:transparent;border:none;resize:none;color:var(--text);
+    font-family:var(--font);font-size:13.5px;line-height:1.5;max-height:130px;outline:none;
+    padding:4px 0;letter-spacing:-.004em;}
+  .composer textarea::placeholder{color:var(--text4);}
+  .cactions{display:flex;align-items:center;gap:6px;}
+  .c-btn{width:32px;height:32px;border-radius:9px;border:1px solid var(--border);
+    background:transparent;color:var(--text3);display:grid;place-items:center;cursor:pointer;
+    transition:color var(--t),background var(--t),border-color var(--t),transform var(--t);}
+  .c-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2);}
+  .c-btn:active{transform:scale(.94);}
+  .c-btn:focus-visible{outline:2px solid rgba(217,122,63,.45);outline-offset:1px;}
+  .mic{width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;cursor:pointer;display:grid;place-items:center;
+    box-shadow:0 10px 26px -8px rgba(217,122,63,.75),inset 0 1px 0 rgba(255,255,255,.25);
+    transition:transform var(--t),box-shadow var(--t),background var(--t);}
+  .mic:hover{transform:translateY(-1px);box-shadow:0 14px 30px -8px rgba(217,122,63,.85),inset 0 1px 0 rgba(255,255,255,.25);}
+  .mic:active{transform:scale(.93);}
+  .mic:focus-visible{outline:2px solid rgba(217,122,63,.55);outline-offset:2px;}
+  .mic.mute{background:var(--surface2);color:var(--text4);box-shadow:none;}
+  .mic-tip{font-size:10px;color:var(--text4);text-align:center;padding:0 18px 14px;}
+
+  @media(max-width:900px){.vpane{position:absolute;top:58px;bottom:0;left:0;z-index:30;
+    box-shadow:0 0 40px rgba(0,0,0,.6);border-right:1px solid var(--border2);}}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg class="ic-20 mic-svg" viewBox="0 0 24 24"><path d="M12 3c.6 4.8 4.2 8.4 9 9-4.8.6-8.4 4.2-9 9-.6-4.8-4.2-8.4-9-9 4.8-.6 8.4-4.2 9-9z"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">Hermes Voice</div>
+        <div class="logo-sub">codex-lite</div>
+      </div>
+    </div>
+    <div class="h-space"></div>
+    <div class="seg" id="modeSeg">
+      <div class="s on" tabindex="0"><svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Voz</div>
+      <div class="s" tabindex="0"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12z"/></svg>Chat</div>
+      <div class="s" tabindex="0"><svg class="ic" viewBox="0 0 24 24"><path d="m12 3 8 4.5-8 4.5-8-4.5z"/><path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/></svg>Agentes</div>
+    </div>
+    <div class="agent-btn">
+      <span class="d"></span>
+      <span>Orca</span>
+      <svg class="ic-s chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="h-right">
+      <div class="h-stat"><span class="d"></span><span id="hstat">Escuchando</span></div>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- VOICE PANE -->
+    <div class="vpane">
+      <div class="vp-head">
+        <div class="vp-title">Voz en vivo · <span class="st" id="vpSt">escuchando</span></div>
+        <div class="vp-head-r">
+          <button class="icon-btn" title="Colapsar voz" aria-label="Colapsar panel de voz">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9.5 5v14"/></svg>
+          </button>
+          <div class="vp-orb" id="vpOrb">
+            <svg class="ic-20 mic-svg" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="vp-live">
+        <div class="live-line"><span class="me">Robert:</span> <span class="cur">Etiqueta de café pa</span></div>
+        <div class="live-time">transcripción en vivo · 0:14</div>
+        <div class="vp-transcript">
+          <div class="vt-row user"><span class="av">R</span><div class="tb"><div class="who">Robert <span class="tm">14:02</span></div><div class="bd">Etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, papel kraft, tipografía limpia.</div></div></div>
+          <div class="vt-row hermes"><span class="av"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3c.6 4.8 4.2 8.4 9 9-4.8.6-8.4 4.2-9 9-.6-4.8-4.2-8.4-9-9 4.8-.6 8.4-4.2 9-9z"/></svg></span><div class="tb"><div class="who">Hermes Voice <span class="tm">hace 2 min</span></div><div class="bd">Perfecto. Delego a Orca: brief kraft minimal para Reserva Los Ríos. Ya está generando.</div></div></div>
+          <div class="vt-row hermes"><span class="av"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3c.6 4.8 4.2 8.4 9 9-4.8.6-8.4 4.2-9 9-.6-4.8-4.2-8.4-9-9 4.8-.6 8.4-4.2 9-9z"/></svg></span><div class="tb"><div class="who">Hermes Voice <span class="tm">ahora</span></div><div class="bd">Ya casi está: el agente va al 64%.</div></div></div>
+        </div>
+      </div>
+
+      <div class="vp-steps">
+        <div class="vp-step on" data-i="0"><span class="n">01</span><span class="l">Escuchando</span><div class="d"><span></span><span></span><span></span><span></span></div><svg class="done-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></div>
+        <div class="vp-step" data-i="1"><span class="n">02</span><span class="l">Transcribiendo</span><div class="d"><span></span><span></span><span></span><span></span></div><svg class="done-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></div>
+        <div class="vp-step" data-i="2"><span class="n">03</span><span class="l">Hablando</span><div class="d"><span></span><span></span><span></span><span></span></div><svg class="done-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></div>
+      </div>
+    </div>
+
+    <!-- CHAT PANE -->
+    <div class="cpane">
+      <div class="chat-scroll">
+        <div class="chat-inner">
+          <div class="day-div">Hoy</div>
+          <div class="msg me"><div class="who"><span class="nm">Robert</span><span class="tm">14:02</span></div><div class="bubble">Etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, kraft, tipografía limpia.</div></div>
+          <div class="deleg open">
+            <div class="dhead">
+              <svg class="ico" viewBox="0 0 24 24"><rect x="6" y="9" width="12" height="10" rx="3"/><path d="M12 9V5"/><circle cx="9.5" cy="13.5" r="1"/><circle cx="14.5" cy="13.5" r="1"/><path d="M12 5a1 1 0 0 0-2-0"/></svg>
+              <span class="t">Etiqueta Reserva Los Ríos</span>
+              <span class="ag">orca-7b</span>
+              <span class="st run"><span class="dot"></span>Ejecutando</span>
+              <svg class="ic-s chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="dbody">
+              <div class="dline"><span class="k">brief</span><span class="v">Etiqueta café kraft minimal "RESERVA LOS RÍOS", tipografía limpia, estética Venturi.</span></div>
+              <div class="dline"><span class="k">flujo</span><span class="v">flux2 → compositing → etiqueta</span></div>
+              <div class="mini-term"><span class="ln"><span class="p">$</span> <span class="c">comfyui</span>.queue --workflow etiqueta_kraft_v2.json</span><span class="ln"><span class="o">→ queued #182</span></span><span class="ln"><span class="o">→ sampling 64% · 18s</span></span></div>
+            </div>
+          </div>
+          <div class="msg agent"><div class="who"><span class="wa"><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="9" width="12" height="10" rx="3"/><path d="M12 9V5"/><circle cx="9.5" cy="13.5" r="1"/><circle cx="14.5" cy="13.5" r="1"/></svg></span><span class="nm">Orca</span><span class="tm">hace 30 s</span></div><div class="bubble">Render listo: etiqueta_reserva_v2.png · 1024×1024. <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">#182</span></div></div>
+          <div class="msg me"><div class="who"><span class="nm">Robert</span><span class="tm">14:05</span></div><div class="bubble">Súbelo a la entrega y avísame.</div></div>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <textarea rows="1" placeholder="Escribe a Hermes, o usa el mic…"></textarea>
+          <div class="cactions">
+            <button class="c-btn" title="Adjuntar" aria-label="Adjuntar archivo">
+              <svg class="ic" viewBox="0 0 24 24"><path d="m21.2 11.2-8.6 8.6a6 6 0 0 1-8.4-8.4l9.1-9.1a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
+            </button>
+            <button class="c-btn" title="Acción rápida" aria-label="Acción rápida">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5h6L11 22l8.5-11.5h-6z"/></svg>
+            </button>
+            <button class="mic" id="mic" title="Micrófono" aria-label="Activar voz">
+              <svg class="ic-20 mic-svg" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const mic=document.getElementById('mic');
+  const steps=[...document.querySelectorAll('.vp-step')];
+  const orb=document.getElementById('vpOrb');
+  const st=document.getElementById('vpSt');
+  const hstat=document.getElementById('hstat');
+  const names=['Escuchando','Transcribiendo','Hablando'];
+  let ph=0;
+  function setPh(i){
+    ph=i;
+    steps.forEach((el,idx)=>{
+      el.classList.toggle('on',idx===i);
+      el.classList.toggle('done',idx<i);
+    });
+    orb.classList.remove('listen','speak');
+    if(i===0){orb.classList.add('listen');mic.classList.remove('mute');}
+    if(i===1){mic.classList.remove('mute');}
+    if(i===2){orb.classList.add('speak');mic.classList.add('mute');}
+    st.textContent=names[i].toLowerCase();
+    hstat.textContent=names[i];
+  }
+  mic.addEventListener('click',()=>setPh((ph+1)%3));
+  document.querySelectorAll('#modeSeg .s').forEach(s=>s.addEventListener('click',()=>{document.querySelectorAll('#modeSeg .s').forEach(x=>x.classList.remove('on'));s.classList.add('on');}));
+  document.querySelectorAll('.dhead').forEach(h=>h.addEventListener('click',()=>h.closest('.deleg').classList.toggle('open')));
+  setPh(0);
+</script>
+</body>
+</html>

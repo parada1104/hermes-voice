@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0c0e;
+    --surface: #14161a;
+    --surface2: #1b1e24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f4f5f6;
+    --text2: #9aa0aa;
+    --text3: #646a72;
+    --text4: #464c53;
+    --accent: #d97a3f;
+    --accent2: #f0905c;
+    --green: #2fbf8f;
+    --amber: #eab04c;
+    --blue: #6aa6e8;
+    --violet: #a58af0;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh; overflow: hidden;
+    font-size: 14px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* header */
+  .header {
+    display:flex; align-items:center; gap:16px;
+    height:58px; padding:0 22px;
+    flex:0 0 58px;
+    background:rgba(11,12,14,0.8);
+    border-bottom:1px solid var(--border);
+    backdrop-filter:blur(12px);
+    z-index:20;
+  }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:600; font-size:15px; letter-spacing:-.01em; }
+  .logo .glyph{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:12px;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.12);}
+  .logo .sub{font-size:11px;color:var(--text3);font-weight:400;margin-left:2px;font-family:var(--mono);}
+  .h-space{flex:1;}
+
+  .seg {
+    display:flex;align-items:center;gap:2px;
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px;
+  }
+  .seg .s{
+    padding:5px 12px;border-radius:7px;font-size:12.5px;font-weight:500;color:var(--text3);cursor:pointer;white-space:nowrap;
+  }
+  .seg .s:hover{color:var(--text);}
+  .seg .s.on{background:var(--surface2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+  .seg .s.on .dotl{background:var(--green);}
+  .seg .s .dotl{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text4);margin-right:6px;}
+
+  .agent-btn{
+    display:flex;align-items:center;gap:9px;
+    background:var(--surface);border:1px solid var(--border2);border-radius:9px;
+    padding:6px 11px;cursor:pointer;position:relative;user-select:none;font-size:13px;
+  }
+  .agent-btn:hover{border-color:var(--accent);}
+  .agent-btn .d{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .agent-btn .chev{font-size:10px;color:var(--text3);}
+  .amenu{position:absolute;top:calc(100%+6px);left:0;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:6px;min-width:190px;display:none;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);z-index:60;}
+  .agent-btn.open .amenu{display:block;}
+  .amenu .o{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;font-size:13px;cursor:pointer;}
+  .amenu .o:hover{background:var(--surface);}
+  .amenu .o.on{background:rgba(217,122,63,.14);}
+  .amenu .o .g{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--mono);}
+
+  .h-right{display:flex;align-items:center;gap:9px;}
+  .h-stat{display:flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--text3);font-weight:500;}
+  .h-stat .d{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .ghost{width:31px;height:31px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);display:grid;place-items:center;cursor:pointer;font-size:14px;}
+  .ghost:hover{background:var(--surface);color:var(--text);}
+
+  /* tabs */
+  .tabbar{display:flex;align-items:center;gap:2px;padding:0 16px;height:42px;flex:0 0 42px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+  .tabbar::-webkit-scrollbar{display:none;}
+  .tab{display:flex;align-items:center;gap:8px;padding:0 13px;font-size:12.5px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;position:relative;}
+  .tab:hover{color:var(--text);}
+  .tab.on{color:var(--text);border-bottom-color:var(--accent);}
+  .tab .ico{opacity:.85;font-size:12px;}
+  .tab .st{width:6px;height:6px;border-radius:50%;}
+  .tab .st.busy{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:pulse 1.5s infinite;}
+  .tab .st.run{background:var(--green);}
+  .tab .st.idle{background:var(--text4);}
+  .tab .x{margin-left:3px;font-size:11px;color:var(--text4);border-radius:4px;width:16px;height:16px;display:grid;place-items:center;opacity:0;}
+  .tab:hover .x{opacity:1;}
+  .tab .x:hover{background:rgba(255,255,255,.08);color:var(--text);}
+  .tab-new{padding:0 9px;color:var(--text3);cursor:pointer;font-size:17px;}
+  .tab-new:hover{color:var(--text);}
+
+  /* body */
+  .body{flex:1;display:flex;min-height:0;}
+
+  /* sidebar */
+  .sidebar{width:212px;flex:0 0 212px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 0;}
+  .sb-scroll{overflow-y:auto;flex:1;padding:0 11px;}
+  .sb-head{display:flex;align-items:center;justify-content:space-between;padding:4px 9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text4);}
+  .sb-head .p{font-size:13px;color:var(--text3);cursor:pointer;}
+  .sb-head .p:hover{color:var(--text);}
+  .sb-lab{padding:9px 9px 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text4);}
+  .sb-it{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;font-size:13px;color:var(--text2);cursor:pointer;margin-bottom:1px;}
+  .sb-it:hover{background:var(--surface2);color:var(--text);}
+  .sb-it.on{background:rgba(217,122,63,.12);color:var(--text);}
+  .sb-it .i{font-size:13px;opacity:.85;}
+  .sb-it .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sb-it .c{font-size:10.5px;color:var(--text3);font-family:var(--mono);}
+  .sb-it .av{width:17px;height:17px;border-radius:5px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:8px;color:#fff;font-weight:700;flex:0 0 17px;}
+  .sb-it .av.alt1{background:linear-gradient(135deg,var(--blue),#5fc0f0);}
+  .sb-it .av.alt2{background:linear-gradient(135deg,#ef6a5f,#f0b14a);}
+  .sb-it .av.alt3{background:linear-gradient(135deg,var(--green),#4fd09a);}
+
+  /* main */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;}
+  .chat-scroll{flex:1;overflow-y:auto;padding:32px 0 130px;}
+  .chat-inner{max-width:680px;margin:0 auto;padding:0 26px;display:flex;flex-direction:column;gap:20px;}
+  .day-div{display:flex;align-items:center;gap:14px;font-size:11px;color:var(--text4);margin:4px 0 0;}
+  .day-div::before,.day-div::after{content:"";flex:1;height:1px;background:var(--border);}
+
+  .msg{display:flex;flex-direction:column;}
+  .msg.me{align-items:flex-end;}
+  .msg .who{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);margin-bottom:6px;}
+  .msg .who .wa{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;color:#fff;}
+  .msg.me .who .wa{background:linear-gradient(135deg,#3a3f4b,#4a5060);}
+  .msg.voice .who .wa{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .msg.agent .who .wa{background:linear-gradient(135deg,#23262e,#2c303a);color:var(--violet);}
+  .msg .who .nm{font-weight:500;}
+  .msg .who .tm{font-family:var(--mono);font-size:10px;color:var(--text4);}
+  .bubble{max-width:72%;border-radius:15px;padding:12px 16px;font-size:14px;line-height:1.6;}
+  .msg.me .bubble{background:var(--surface2);border:1px solid var(--border2);border-bottom-right-radius:5px;}
+  .msg.voice .bubble{background:rgba(217,122,63,.08);border:1px solid rgba(217,122,63,.22);border-bottom-left-radius:5px;color:#f6eee7;}
+  .msg.agent .bubble{background:rgba(255,255,255,.03);border:1px solid var(--border);border-bottom-left-radius:5px;}
+  .speaker{display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+  .speaker .sl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);}
+  .wave{display:inline-flex;align-items:flex-end;gap:2.5px;height:12px;}
+  .wave span{width:3px;border-radius:2px;background:var(--accent2);animation:wave 1s ease-in-out infinite;}
+  .wave span:nth-child(1){height:40%;animation-delay:0s}
+  .wave span:nth-child(2){height:100%;animation-delay:.15s}
+  .wave span:nth-child(3){height:70%;animation-delay:.3s}
+  .wave span:nth-child(4){height:95%;animation-delay:.45s}
+  @keyframes wave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+  .meta{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:10.5px;color:var(--text4);flex-wrap:wrap;}
+  .meta .tag{padding:2px 8px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text3);}
+  .meta .tag.acc{color:var(--accent2);border-color:rgba(217,122,63,.32);background:rgba(217,122,63,.08);}
+
+  /* delegation */
+  .deleg{max-width:82%;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden;font-size:13px;}
+  .dhead{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+  .dhead:hover{background:rgba(255,255,255,.02);}
+  .dhead .chev{font-size:9px;color:var(--text3);transition:transform .2s;width:13px;}
+  .deleg.open .dhead .chev{transform:rotate(90deg);}
+  .dhead .ico{font-size:13px;}
+  .dhead .t{font-weight:500;}
+  .dhead .ag{font-family:var(--mono);font-size:10px;color:var(--violet);background:rgba(165,138,240,.1);padding:1px 8px;border-radius:5px;margin-left:2px;}
+  .dhead .st{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;}
+  .dhead .st .dot{width:7px;height:7px;border-radius:50%;}
+  .dhead .st.run{color:var(--amber);}
+  .dhead .st.run .dot{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:pulse 1.4s infinite;}
+  .dhead .st.done{color:var(--green);}
+  .dhead .st.done .dot{background:var(--green);}
+  .dhead .st.idle{color:var(--text3);}
+  .dhead .st.idle .dot{background:var(--text4);}
+  .dhead .st .pr{font-family:var(--mono);font-size:10px;color:var(--text3);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:0 6px;border-radius:4px;}
+  .dbody{display:none;padding:0 14px 14px;gap:10px;flex-direction:column;}
+  .deleg.open .dbody{display:flex;}
+  .dline{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--text2);}
+  .dline .k{font-family:var(--mono);font-size:11px;color:var(--text4);width:30px;flex:0 0 30px;margin-top:1px;}
+  .dline .v{flex:1;}
+  .dline code{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);padding:2px 5px;border-radius:4px;color:var(--text2);}
+  .mini-term{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--text3);line-height:1.75;}
+  .mini-term .ln{display:block;}
+  .mini-term .p{color:var(--green);} .mini-term .c{color:var(--blue);} .mini-term .o{color:var(--text2);}
+
+  .typing{display:flex;align-items:center;gap:4px;padding:3px 2px;}
+  .typing span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:pulse 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s}
+  .typing span:nth-child(3){animation-delay:.4s}
+
+  /* voice phases */
+  .voice-phases{position:absolute;bottom:74px;left:0;right:0;display:flex;justify-content:center;pointer-events:none;}
+  .vp-row{pointer-events:auto;display:flex;align-items:center;gap:3px;background:rgba(20,22,26,.85);backdrop-filter:blur(10px);border:1px solid var(--border2);border-radius:999px;padding:3px 5px;}
+  .vp{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;color:var(--text3);font-weight:500;transition:all .2s;}
+  .vp .d{width:6px;height:6px;border-radius:50%;background:var(--text4);}
+  .vp.on{color:var(--text);background:rgba(255,255,255,.06);}
+  .vp.on .d{background:var(--accent2);box-shadow:0 0 7px var(--accent2);}
+  .vp.off{opacity:.35;}
+
+  /* composer */
+  .composer-wrap{position:absolute;bottom:18px;left:0;right:0;padding:0 26px;display:flex;justify-content:center;pointer-events:none;}
+  .composer{pointer-events:auto;width:100%;max-width:660px;background:rgba(20,22,26,.92);backdrop-filter:blur(16px);border:1px solid var(--border2);border-radius:18px;box-shadow:0 26px 60px -20px rgba(0,0,0,.75);padding:13px 15px;display:flex;align-items:flex-end;gap:10px;}
+  .composer textarea{flex:1;background:transparent;border:none;resize:none;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;max-height:140px;outline:none;padding:4px 0;}
+  .composer textarea::placeholder{color:var(--text4);}
+  .cactions{display:flex;align-items:center;gap:6px;}
+  .c-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text3);display:grid;place-items:center;cursor:pointer;font-size:13px;transition:all .15s;}
+  .c-btn:hover{background:var(--surface2);color:var(--text);}
+  .mic{width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center;position:relative;box-shadow:0 10px 26px -8px rgba(217,122,63,.75);transition:transform .15s;}
+  .mic:hover{transform:translateY(-1px);}
+  .mic:active{transform:scale(.94);}
+  .mic.halt{background:linear-gradient(135deg,#ef5f5f,var(--amber));box-shadow:0 10px 26px -8px rgba(239,95,95,.7);}
+  .mic-ring{position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(217,122,63,.4);opacity:0;pointer-events:none;}
+  .mic.listen .mic-ring{opacity:1;border-color:rgba(106,166,232,.6);animation:ripple 1.6s infinite;}
+  .mic.speak .mic-ring{opacity:1;border-color:rgba(240,144,92,.7);animation:ripple 1.2s infinite;}
+  @keyframes ripple{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.55);opacity:0}}
+
+  @media(max-width:880px){.sidebar{position:absolute;left:0;top:58px;bottom:0;z-index:30;box-shadow:0 0 40px rgba(0,0,0,.6);}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo"><div class="glyph">❋</div>Hermes Voice<span class="sub">codex-lite</span></div>
+    <div class="h-space"></div>
+
+    <div class="seg" id="modeSeg">
+      <div class="s on"><span class="dotl"></span>Voz</div>
+      <div class="s">Chat</div>
+      <div class="s">Agentes</div>
+    </div>
+
+    <div class="agent-btn" id="agentBtn">
+      <span class="d"></span><span class="label">Orca</span><span class="chev">▾</span>
+      <div class="amenu">
+        <div class="o on"><span class="d" style="background:var(--green);width:6px;height:6px;border-radius:50%;display:inline-block"></span>Orca<span class="g">orca-7b</span></div>
+        <div class="o"><span class="d" style="background:var(--blue);width:6px;height:6px;border-radius:50%;display:inline-block"></span>Composer<span class="g">composer-2.5</span></div>
+        <div class="o"><span class="d" style="background:var(--violet);width:6px;height:6px;border-radius:50%;display:inline-block"></span>Pi<span class="g">pi-gentle</span></div>
+        <div class="o"><span class="d" style="background:var(--amber);width:6px;height:6px;border-radius:50%;display:inline-block"></span>Opus<span class="g">opus-4.8</span></div>
+      </div>
+    </div>
+
+    <div class="h-right">
+      <div class="h-stat"><span class="d"></span>Escuchando</div>
+      <button class="ghost">⌘</button>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tabbar">
+    <div class="tab on"><span class="ico">🎙</span>Venturi · etiquetas<span class="st busy"></span><span class="x">✕</span></div>
+    <div class="tab"><span class="ico">🛠</span>Sazón · reel<span class="st run"></span><span class="x">✕</span></div>
+    <div class="tab"><span class="ico">⚡</span>tech-market-ai<span class="st idle"></span><span class="x">✕</span></div>
+    <div class="tab"><span class="ico">📸</span>sorteo-instagram<span class="st idle"></span><span class="x">✕</span></div>
+    <div class="tab-new">+</div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sb-head"><span>Sesiones</span><span class="p">＋</span></div>
+      <div class="sb-scroll">
+        <div class="sb-lab">Proyectos</div>
+        <div class="sb-it on"><span class="av">V</span><span class="n">Venturi Coffee</span><span class="c">4</span></div>
+        <div class="sb-it"><span class="av alt1">S</span><span class="n">Sazón Cruz</span><span class="c">2</span></div>
+        <div class="sb-it"><span class="av alt2">T</span><span class="n">tech-market-ai</span><span class="c">1</span></div>
+        <div class="sb-it"><span class="av alt3">I</span><span class="n">sorteo-instagram</span><span class="c">1</span></div>
+        <div class="sb-it"><span class="i">🗂</span><span class="n">IRAM Studios</span><span class="c">0</span></div>
+        <div class="sb-lab">Agentes activos</div>
+        <div class="sb-it"><span class="i">🧠</span><span class="n">Orca</span><span class="c">busy</span></div>
+        <div class="sb-it"><span class="i">🤖</span><span class="n">Composer</span><span class="c">idle</span></div>
+        <div class="sb-it"><span class="i">🧑‍💻</span><span class="n">Pi</span><span class="c">idle</span></div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="chat-scroll">
+        <div class="chat-inner">
+
+          <div class="day-div">Hoy</div>
+
+          <!-- user -->
+          <div class="msg me">
+            <div class="who"><span class="nm">Robert</span><span class="tm">14:02</span></div>
+            <div class="bubble">Etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, papel kraft, tipografía limpia.</div>
+          </div>
+
+          <!-- voice -->
+          <div class="msg voice">
+            <div class="who"><span class="wa">🎙</span><span class="nm">Hermes Voice</span><span class="tm">hace 2 min</span></div>
+            <div class="bubble">
+              <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sl">Voz</span></div>
+              Perfecto, Robert. Delego a Orca: brief de etiqueta kraft minimal para Reserva Los Ríos, tipografía limpia, estética Venturi. Ya está generando.
+              <div class="meta"><span class="tag acc">→ Orca</span><span>delegado hace 2 min</span></div>
+            </div>
+          </div>
+
+          <!-- delegation -->
+          <div class="deleg open">
+            <div class="dhead">
+              <span class="chev">▶</span><span class="ico">🛠</span><span class="t">Etiqueta Reserva Los Ríos</span><span class="ag">orca-7b</span>
+              <span class="st run"><span class="dot"></span>Ejecutando<span class="pr">ComfyUI</span></span>
+            </div>
+            <div class="dbody">
+              <div class="dline"><span class="k">brief</span><span class="v">Etiqueta café kraft minimal "RESERVA LOS RÍOS", tipografía limpia, estética Venturi.</span></div>
+              <div class="dline"><span class="k">flujo</span><span class="v"><code>flux2</code> → <code>compositing</code> → <code>etiqueta</code></span></div>
+              <div class="mini-term">
+                <span class="ln"><span class="p">$</span> <span class="c">comfyui</span>.queue --workflow etiqueta_kraft_v2.json</span>
+                <span class="ln"><span class="o">→ queued #182</span></span>
+                <span class="ln"><span class="o">→ sampling 64% · 18s</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- voice speaking -->
+          <div class="msg voice">
+            <div class="who"><span class="wa">🎙</span><span class="nm">Hermes Voice</span><span class="tm">ahora</span></div>
+            <div class="bubble">
+              <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sl">Hablando</span></div>
+              Ya casi está, Señor. El agente va al 64%; en un momento te paso el render validado contra el referente de la línea Reserva.
+              <div class="meta"><span class="tag">voz → texto</span><span>transcribiendo</span></div>
+            </div>
+          </div>
+
+          <!-- agent result -->
+          <div class="msg agent">
+            <div class="who"><span class="wa">🤖</span><span class="nm">Orca</span><span class="tm">hace 30 s</span></div>
+            <div class="bubble">Render listo: <code style="font-family:var(--mono);font-size:12px">etiqueta_reserva_v2.png</code> · 1024×1024 · validado vs referente.<div class="meta"><span class="tag">done</span><span class="tag">#182</span></div></div>
+          </div>
+
+          <!-- user followup -->
+          <div class="msg me">
+            <div class="who"><span class="nm">Robert</span><span class="tm">14:05</span></div>
+            <div class="bubble">Súbelo a la entrega y avísame.</div>
+          </div>
+
+          <!-- voice reply -->
+          <div class="msg voice">
+            <div class="who"><span class="wa">🎙</span><span class="nm">Hermes Voice</span><span class="tm">hace 5 s</span></div>
+            <div class="bubble">
+              <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sl">Voz</span></div>
+              Listo, subida al workspace de Venturi. ¿Preparo también la variante vertical para el post de Instagram?
+            </div>
+          </div>
+
+          <div class="msg voice">
+            <div class="who"><span class="wa">🎙</span><span class="nm">Hermes Voice</span><span class="tm"></span></div>
+            <div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="voice-phases">
+        <div class="vp-row">
+          <div class="vp on"><span class="d"></span>Escuchando</div>
+          <div class="vp off"><span class="d"></span>Transcribiendo</div>
+          <div class="vp off"><span class="d"></span>Hablando</div>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <textarea rows="1" placeholder="Escribe a Hermes, o usa el mic…"></textarea>
+          <div class="cactions">
+            <button class="c-btn">📎</button>
+            <button class="c-btn">⚡</button>
+            <button class="mic" id="mic"><span class="mic-ring"></span>🎙</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // agent menu
+  const agentBtn=document.getElementById('agentBtn');
+  agentBtn.addEventListener('click',e=>{if(e.target.closest('.amenu'))return;agentBtn.classList.toggle('open');});
+  agentBtn.querySelectorAll('.amenu .o').forEach(o=>o.addEventListener('click',()=>{agentBtn.querySelectorAll('.amenu .o').forEach(x=>x.classList.remove('on'));o.classList.add('on');agentBtn.querySelector('.label').textContent=o.textContent.trim().split(/\s/)[0];agentBtn.classList.remove('open');}));
+  document.addEventListener('click',e=>{if(!agentBtn.contains(e.target))agentBtn.classList.remove('open');});
+
+  // mode segment
+  document.querySelectorAll('#modeSeg .s').forEach(s=>s.addEventListener('click',()=>{document.querySelectorAll('#modeSeg .s').forEach(x=>x.classList.remove('on'));s.classList.add('on');}));
+
+  // tabs
+  document.querySelectorAll('.tabbar .tab').forEach(t=>t.addEventListener('click',e=>{if(e.target.closest('.x')){t.remove();return;}document.querySelectorAll('.tabbar .tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');}));
+
+  // delegations
+  document.querySelectorAll('.dhead').forEach(h=>h.addEventListener('click',()=>h.closest('.deleg').classList.toggle('open')));
+
+  // mic + phases
+  const mic=document.getElementById('mic');
+  const vps=document.querySelectorAll('.vp-row .vp');
+  const stat=document.querySelector('.h-stat');
+  let ph=0;const names=['Escuchando','Transcribiendo','Hablando'];
+  function setPh(i){ph=i;vps.forEach((el,idx)=>{el.classList.toggle('on',idx===i);el.classList.toggle('off',idx<i);});mic.classList.remove('listen','speak');if(i===0)mic.classList.add('listen');if(i===2)mic.classList.add('speak');stat.innerHTML='';stat.appendChild(Object.assign(document.createElement('span'),{className:'d'}));stat.appendChild(document.createTextNode(names[i]));}
+  mic.addEventListener('click',()=>setPh((ph+1)%3));
+  setPh(0);
+
+  // sidebar
+  document.querySelectorAll('.sb-it').forEach(s=>s.addEventListener('click',()=>{document.querySelectorAll('.sb-it').forEach(x=>x.classList.remove('on'));s.classList.add('on');}));
+</script>
+</body>
+</html>

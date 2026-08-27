@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Focus · B (voice-first inmersivo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0b0c0e; --surface:#14161a; --surface2:#1b1e24;
+    --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+    --text:#f4f5f6; --text2:#9aa0aa; --text3:#646a72; --text4:#464c53;
+    --accent:#d97a3f; --accent2:#f0905c; --green:#2fbf8f; --amber:#eab04c;
+    --blue:#6aa6e8; --violet:#a58af0;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .app{display:flex;flex-direction:column;height:100vh;}
+
+  /* minimal header */
+  .header{display:flex;align-items:center;gap:16px;height:50px;padding:0 22px;flex:0 0 50px;border-bottom:1px solid var(--border);z-index:20;}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px;letter-spacing:-.01em;}
+  .logo .glyph{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:11px;color:#fff;}
+  .logo .sub{font-size:10px;color:var(--text3);font-weight:400;font-family:var(--mono);}
+  .h-space{flex:1;}
+  .h-phases{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;}
+  .phase-chip{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:1px solid var(--border);color:var(--text3);transition:all .3s;}
+  .phase-chip .d{width:6px;height:6px;border-radius:50%;background:var(--text4);}
+  .phase-chip.on{color:var(--text);border-color:rgba(217,122,63,.4);background:rgba(217,122,63,.08);}
+  .phase-chip.on .d{background:var(--accent2);box-shadow:0 0 8px var(--accent2);}
+  .phase-chip.pass{opacity:.3;}
+  .h-agent{font-family:var(--mono);font-size:11px;color:var(--violet);background:rgba(165,138,240,.1);padding:3px 10px;border-radius:6px;}
+
+  /* centered immersive stage */
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-height:0;overflow:hidden;}
+  .stage::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(217,122,63,.10),transparent 65%);pointer-events:none;}
+
+  .orb-zone{display:flex;flex-direction:column;align-items:center;gap:26px;position:relative;z-index:2;}
+  .orb-ring{position:relative;width:190px;height:190px;display:grid;place-items:center;}
+  .orb-r1,.orb-r2{position:absolute;inset:0;border-radius:50%;border:1px solid transparent;pointer-events:none;}
+  .orb-r1{border-color:rgba(106,166,232,.25);}
+  .orb-r2{border-color:rgba(240,144,92,.20);}
+  .orb-core{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:40px;color:#fff;box-shadow:0 0 60px -10px rgba(217,122,63,.7);}
+  .stage.listen .orb-r1{animation:spin 8s linear infinite;}
+  .stage.listen .orb-r2{animation:spinRev 12s linear infinite;}
+  .stage.listen .orb-core{box-shadow:0 0 60px -8px rgba(106,166,232,.8);}
+  .stage.speak .orb-r1{animation:spin 5s linear infinite;border-color:rgba(240,144,92,.4);}
+  .stage.speak .orb-r2{animation:spinRev 7s linear infinite;border-color:rgba(217,122,63,.5);}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes spinRev{to{transform:rotate(-360deg)}}
+
+  .orb-wave{display:flex;align-items:flex-end;gap:4px;height:30px;position:absolute;bottom:-44px;left:50%;transform:translateX(-50%);}
+  .orb-wave span{width:4px;border-radius:2px;background:linear-gradient(180deg,var(--accent2),var(--accent));animation:wv 1s ease-in-out infinite;opacity:.9;}
+  .orb-wave span:nth-child(1){height:35%;animation-delay:0s}
+  .orb-wave span:nth-child(2){height:90%;animation-delay:.1s}
+  .orb-wave span:nth-child(3){height:60%;animation-delay:.25s}
+  .orb-wave span:nth-child(4){height:100%;animation-delay:.35s}
+  .orb-wave span:nth-child(5){height:55%;animation-delay:.5s}
+  .orb-wave span:nth-child(6){height:80%;animation-delay:.6s}
+  @keyframes wv{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+
+  .stage-caption{font-size:20px;font-weight:600;letter-spacing:-.01em;color:var(--text);margin-top:14px;}
+  .stage-sub{font-size:12.5px;color:var(--text3);margin-top:6px;text-align:center;max-width:360px;line-height:1.6;}
+  .stage-listen .stage-caption{color:var(--blue);}
+  .stage-speak .stage-caption{color:var(--accent2);}
+
+  /* live transcript line under orb */
+  .live-strip{margin-top:38px;width:100%;max-width:560px;padding:0 26px;text-align:center;position:relative;z-index:2;}
+  .live-caption{font-size:13.5px;color:var(--text2);line-height:1.6;}
+  .live-caption .cur{color:var(--text);}
+  .caret{display:inline-block;width:2px;height:14px;background:var(--accent2);vertical-align:-2px;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0}}
+  .live-meta{margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text4);}
+
+  /* collapsed transcript drawer */
+  .drawer{position:absolute;top:50px;bottom:0;right:0;width:360px;background:var(--surface);border-left:1px solid var(--border);transform:translateX(100%);transition:transform .3s;z-index:40;display:flex;flex-direction:column;}
+  .drawer.open{transform:translateX(0);}
+  .dr-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);}
+  .dr-head .x{margin-left:auto;cursor:pointer;color:var(--text4);font-size:14px;}
+  .dr-body{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:14px;}
+  .dr-line{font-size:13px;line-height:1.6;color:var(--text2);}
+  .dr-line.hermes{color:var(--text);}
+  .dr-line .who{font-size:10px;color:var(--text4);margin-bottom:3px;font-weight:500;}
+  .dr-line .who .tm{float:right;font-family:var(--mono);}
+
+  /* mic control */
+  .ctl{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:30px;position:relative;z-index:2;}
+  .mic{width:64px;height:64px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:26px;cursor:pointer;display:grid;place-items:center;box-shadow:0 14px 36px -10px rgba(217,122,63,.8);transition:all .2s;}
+  .mic:active{transform:scale(.92);}
+  .mic.mute{background:var(--surface2);color:var(--text3);box-shadow:none;}
+  .mic-ring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;}
+  .stage.listen .mic-ring{border-color:rgba(106,166,232,.5);animation:ripple 1.6s infinite;}
+  .stage.speak .mic-ring{border-color:rgba(240,144,92,.6);animation:ripple 1.2s infinite;}
+  @keyframes ripple{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.7);opacity:0}}
+  .ctl-side{font-size:12px;color:var(--text3);}
+  .ctl-side small{display:block;font-family:var(--mono);font-size:10px;color:var(--text4);margin-top:2px;}
+
+  @media(max-width:820px){.drawer{width:88%;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo"><div class="glyph">❋</div>Hermes Voice<span class="sub">codex-lite</span></div>
+    <div class="h-space"></div>
+    <div class="h-agent">orca-7b</div>
+    <div class="h-phases">
+      <div class="phase-chip on"><span class="d"></span>Escuchar</div>
+      <div class="phase-chip"><span class="d"></span>Hablar</div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="orb-zone">
+      <div class="orb-ring">
+        <div class="orb-r1"></div>
+        <div class="orb-r2"></div>
+        <div class="orb-core">🎙</div>
+        <div class="orb-wave"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="stage-caption" id="cap">Escuchando</div>
+      <div class="stage-sub" id="sub">Di lo que necesites — Hermes delega a los agentes en voz alta.</div>
+    </div>
+
+    <div class="live-strip">
+      <div class="live-caption" id="live"><span class="cur">Etiqueta de café pa</span></div>
+      <div class="live-meta" id="lm">transcripción en vivo · 0:14</div>
+    </div>
+
+    <div class="ctl">
+      <div class="ctl-side">TTY<small>⌘+⇧+1</small></div>
+      <div class="mic" id="mic"><span class="mic-ring"></span>🎙</div>
+      <div class="ctl-side">Transc.<br><small id="toggleDr" style="cursor:pointer;color:var(--accent2)">ver ↦</small></div>
+    </div>
+  </div>
+
+  <!-- transcript drawer -->
+  <div class="drawer" id="drawer">
+    <div class="dr-head">Transcripción<span class="x" id="drClose">✕</span></div>
+    <div class="dr-body">
+      <div class="dr-line hermes"><div class="who">✓ Hermes Voice <span class="tm">—</span></div>Perfecto, Robert. Delego a Orca: brief kraft minimal para Reserva Los Ríos.</div>
+      <div class="dr-line"><div class="who">Orca · comfyui</div>queued #182 → sampling 64% · 18s</div>
+      <div class="dr-line hermes"><div class="who">✓ Hermes Voice <span class="tm">—</span></div>Ya casi está, Señor. El agente va al 64%.</div>
+      <div class="dr-line"><div class="who">Orca · reset</div>etiqueta_reserva_v2.png · 1024×1024 · validado vs referente</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stage=document.getElementById('stage');
+  const mic=document.getElementById('mic');
+  const cap=document.getElementById('cap');
+  const sub=document.getElementById('sub');
+  const live=document.getElementById('live');
+  const lm=document.getElementById('lm');
+  const chips=[...document.querySelectorAll('.phase-chip')];
+  const drawer=document.getElementById('drawer');
+  const subs=['Di lo que necesites — Hermes delega a los agentes en voz alta.','Hermes entiende tu pedido y lo reparte entre los agentes.','Hermes habla: delegación en curso, te avisa al terminar.'];
+  let ph=0;
+  const names=['Escuchando','Procesando','Hablando'];
+  function setPh(i){
+    ph=i;
+    stage.classList.remove('listen','speak','stage-listen','stage-speak','stage-silent');
+    cap.textContent=names[i];
+    sub.textContent=subs[i];
+    chips.forEach((el,idx)=>{el.classList.toggle('on',idx===i||(i===1&&idx===1));el.classList.toggle('pass',idx<i);});
+    if(i===0){stage.classList.add('listen','stage-listen');mic.classList.remove('mute');live.innerHTML='<span class="cur">Etiqueta de café pa</span>';lm.textContent='transcripción en vivo · 0:14';}
+    if(i===1){mic.classList.remove('mute');live.innerHTML='Entendido: etiqueta kraft minimal para <span class="cur">Reserva Los Ríos</span>.';lm.textContent='interpretando · delegando';}
+    if(i===2){stage.classList.add('speak','stage-speak');mic.classList.add('mute');live.innerHTML='Ya casi está, Señor. El agente va al 64%.';lm.textContent='voz sincronizada';}
+  }
+  mic.addEventListener('click',()=>setPh((ph+1)%3));
+  document.getElementById('toggleDr').addEventListener('click',()=>drawer.classList.add('open'));
+  document.getElementById('drClose').addEventListener('click',()=>drawer.classList.remove('open'));
+  setPh(0);
+</script>
+</body>
+</html>

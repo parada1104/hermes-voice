@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:#08090a;color:#f2f3f5;min-height:100vh;padding:48px 24px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto}
+  h1{font-size:26px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+  .sub{color:#8a8f98;font-size:14px;margin-bottom:36px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+  .card{
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;overflow:hidden;text-decoration:none;color:inherit;
+    transition:border-color .15s,transform .15s;
+  }
+  .card:hover{border-color:rgba(138,135,255,.5);transform:translateY(-3px)}
+  .card img{width:100%;display:block;border-bottom:1px solid rgba(255,255,255,.08)}
+  .card .cbody{padding:16px 18px}
+  .card .num{font-size:11px;color:#8a8f98;font-family:monospace;letter-spacing:.06em;text-transform:uppercase}
+  .card .name{font-size:17px;font-weight:600;margin:4px 0 6px}
+  .card .desc{font-size:13px;color:#a7adb8;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hermes Voice · mockups</h1>
+  <p class="sub">3 direcciones de diseño para la app asistente voz + chat que delega a agentes. Haz clic para abrir cada variante navegable.</p>
+  <div class="grid">
+    <a class="card" href="001-command-center/index.html">
+      <img src="001-command-center/preview.png" alt="Command Center">
+      <div class="cbody">
+        <div class="num">Variante 01</div>
+        <div class="name">Command Center</div>
+        <div class="desc">Tres zonas — sidebar de sesiones/agentes + chat protagonista. La más "app de escritorio", densidad alta, contexto a la vista.</div>
+      </div>
+    </a>
+    <a class="card" href="002-split-pane/index.html">
+      <img src="002-split-pane/preview.png" alt="Split Pane">
+      <div class="cbody">
+        <div class="num">Variante 02</div>
+        <div class="name">Split Pane</div>
+        <div class="desc">Conversación a la izquierda, terminal del agente en vivo a la derecha. Transparencia de ejecución, estilo Warp/IDE.</div>
+      </div>
+    </a>
+    <a class="card" href="003-focus-voz/index.html">
+      <img src="003-focus-voz/preview.png" alt="Focus Voz">
+      <div class="cbody">
+        <div class="num">Variante 03</div>
+        <div class="name">Focus Voz</div>
+        <div class="desc">Minimal, la voz primero. Acento cálido terracota sobre dark profundo, máxima calma y legibilidad.</div>
+      </div>
+    </a>
+    <a class="card" href="004-focus-voz-a/index.html">
+      <div class="cbody">
+        <div class="num">Variante 04 · Gemini</div>
+        <div class="name">Focus Voz A</div>
+        <div class="desc">Alternativa de focus-voz con Gemini 3.7 Flash — variante de layout del panel de voz vs chat.</div>
+      </div>
+    </a>
+    <a class="card" href="005-focus-voz-b/index.html">
+      <div class="cbody">
+        <div class="num">Variante 05 · Gemini</div>
+        <div class="name">Focus Voz B</div>
+        <div class="desc">Alternativa de focus-voz con Gemini 3.7 Flash — variante de fases de escuchar/hablar.</div>
+      </div>
+    </a>
+    <a class="card" href="006-focus-voz-c/index.html">
+      <div class="cbody">
+        <div class="num">Variante 06 · Gemini</div>
+        <div class="name">Focus Voz C</div>
+        <div class="desc">Alternativa de focus-voz con Gemini 3.7 Flash — variante de densidad/info visible.</div>
+      </div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

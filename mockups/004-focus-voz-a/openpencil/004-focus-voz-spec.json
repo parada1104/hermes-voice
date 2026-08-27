@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "project": "Hermes Voice — Focus · A (split panel) · 004",
+  "variant": "focus-voz",
+  "artifact": "design-spec",
+  "intent": "Llevar la UI de la variante 004 (split panel de voz) a un diseño de produccion formal. Documento de capas consumible por OpenPencil (tipo Figma).",
+  "canvas": { "width": 1440, "height": 900, "background": "#0B0C0E", "unit": "px" },
+  "tokens": {
+    "colors": {
+      "bg": "#0B0C0E",
+      "surface": "#14161A",
+      "surface-2": "#1B1E24",
+      "surface-3": "#20232A",
+      "border": "rgba(255,255,255,0.07)",
+      "border-2": "rgba(255,255,255,0.12)",
+      "text": "#F4F5F6",
+      "text-2": "#9AA0AA",
+      "text-3": "#646A72",
+      "text-4": "#4A5057",
+      "accent": "#D97A3F",
+      "accent-2": "#F0905C",
+      "green": "#2FBF8F",
+      "amber": "#EAB04C",
+      "blue": "#6AA6E8",
+      "violet": "#A58AF0"
+    },
+    "typography": {
+      "font-ui": "Inter",
+      "font-mono": "JetBrains Mono",
+      "sizes": { "caption": 10, "label": 12, "body": 13, "title": 15, "heading": 32 },
+      "weights": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 }
+    },
+    "icon": { "stroke-width": 1.5, "fill": "none", "stroke": "currentColor", "style": "geometric line", "viewBox": "0 0 24 24", "sizes": [13, 14, 16, 18, 20, 24] },
+    "radius": { "small": 7, "medium": 10, "large": 14, "xlarge": 16, "pill": 999, "bubble": 15 },
+    "spacing": { "unit": 4, "gutter": 16, "composer-pad": 14 },
+    "shadow": {
+      "sh-1": "0 1px 2px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.03)",
+      "sh-2": "0 12px 32px -12px rgba(0,0,0,0.72)",
+      "sh-3": "0 28px 64px -20px rgba(0,0,0,0.85)"
+    }
+  },
+  "structure": {
+    "name": "app-root",
+    "x": 0, "y": 0, "w": 1440, "h": 900,
+    "children": [
+      {
+        "name": "header",
+        "kind": "frame", "x": 0, "y": 0, "w": 1440, "h": 58,
+        "bg": "#0E0F12", "note": "Barra superior. Fix en top. 58px de alto. blur 14px sobre fondo."
+      },
+      {
+        "name": "vpane",
+        "kind": "frame", "x": 0, "y": 58, "w": 384, "h": 842,
+        "bg": "#14161A", "note": "Panel de voz (izquierda). 384px fijos. Contiene orb, transcripcion y stepper de fases."
+      },
+      {
+        "name": "cpane",
+        "kind": "frame", "x": 384, "y": 58, "w": 1056, "h": 842,
+        "bg": "#0B0C0E", "note": "Panel de chat (derecha). Flex 1. Contiene mensajes, card de delegacion y composer."
+      }
+    ]
+  },
+  "components": {
+    "logo": {
+      "kind": "frame", "name": "header/logo", "note": "Marca izquierda.",
+      "children": [
+        { "name": "logo-mark", "kind": "rectangle", "w": 30, "h": 30, "fill": "gradient #D97A3F→#F0905C", "radius": 9, "note": "Icono de marca. Contiene la estrella Hermes (linea)." },
+        { "name": "logo-name", "kind": "text", "size": 15, "weight": 600, "text": "Hermes Voice" },
+        { "name": "logo-sub", "kind": "text", "size": 10, "weight": 400, "text": "codex-lite" }
+      ]
+    },
+    "mode-seg": {
+      "kind": "frame", "name": "header/mode-seg", "note": "Control segmentado de modo (Voz / Chat / Agentes). Seg seleccionado con surface-3.",
+      "states": { "idle": "text-3", "hover": "text-2", "active": "text + surface-3 + sh-1" },
+      "children": [
+        { "name": "seg/voz", "state": "active" },
+        { "name": "seg/chat", "state": "idle" },
+        { "name": "seg/agentes", "state": "idle" }
+      ]
+    },
+    "agent-btn": {
+      "kind": "frame", "name": "header/agent-btn", "note": "Selector de agente activo (Orca). Dot verde online.",
+      "hover": "border-color accent @ 0.45"
+    },
+    "status-pill": {
+      "kind": "frame", "name": "header/status-pill", "note": "Pildora de estado. Dot accent-2 pulsando.",
+      "text": "Escuchando"
+    },
+    "voice-orb": {
+      "kind": "frame", "name": "vpane/orb",
+      "note": "Nucleo de voz. 46px. Gradiente accent→accent-2. Estados: listen (halo azul), speak (halo accent). Contiene icono mic (line)."
+    },
+    "phase-stepper": {
+      "kind": "frame", "name": "vpane/steps",
+      "note": "Stepper de fases de voz en 3 pasos: 01 Escuchando / 02 Transcribiendo / 03 Hablando. Paso activo con surface-2 + borde accent. Los barras de voz animadas en el activo.",
+      "states": { "on": "border accent 0.4 + bg surface-2", "done": "num surface-3 + text-2", "idle": null },
+      "children": [
+        { "name": "step/01-listening", "state": "on", "bars": "4 barras animadas #F0905C" },
+        { "name": "step/02-transcribing", "state": "idle" },
+        { "name": "step/03-speaking", "state": "idle" }
+      ]
+    },
+    "deleg-card": {
+      "kind": "frame", "name": "cpane/deleg", "note": "Card de delegacion de tarea a un agente. Header colapsable (abre cierra body).",
+      "states": { "collapsed": "solo header", "open": "header + body con brief/flujo/terminal" },
+      "children": [
+        { "name": "deleg/head", "children": [ "tip", { "name": "agent-chip", "is": "orca-7b", "color": "violet" }, { "name": "status", "is": "Ejecutando", "color": "amber" } ] },
+        { "name": "deleg/body", "children": [ "brief", "flujo", { "name": "mini-term", "is": "comfyui .queue --workflow etiqueta_kraft_v2.json → queued #182 → sampling 64% · 18s" } ] }
+      ]
+    },
+    "composer": {
+      "kind": "frame", "name": "cpane/composer",
+      "note": "Composer flotante centrado abajo. max-width 660px. blur 18px sobre fondo. Focus-within borde accent.",
+      "children": [
+        { "name": "textarea", "placeholder": "Escribe a Hermes, o usa el mic…" },
+        { "name": "attach", "kind": "c-btn", "icon": "clip" },
+        { "name": "quick-action", "kind": "c-btn", "icon": "bolt" },
+        { "name": "mic", "kind": "c-btn", "is": "PRIMARY", "note": "Botón de micrófono. 42px circular, gradiente accent→accent-2, icono mic (line 1.5). Estados: hover (lift -1px + sombra), active (scale .93), mute (surface-2 + text-4)." }
+      ]
+    }
+  },
+  "mic-icon": {
+    "path": "M9 3 6 11h13" ,
+    "geometry": "capsule (rect x9 y3 w6 h11 rx3), arc (M5 11 a7 7 0 0 0 14 0), base (M12 18 v3)",
+    "rendering": { "fill": "none", "stroke": "currentColor", "stroke-width": 1.5, "stroke-linecap": "round", "stroke-linejoin": "round", "viewBox": "0 0 24 24" },
+    "note": "Icono de microfono en modo LINE (no emoji, no relleno). Trazo fino 1.5, geometrico. Coherente con el resto del set de iconos line.",
+    "locations": ["header/logo-mark", "vpane/orb", "cpane/composer/mic"]
+  },
+  "mic-states": {
+    "idle": { "stroke": "#9AA0AA", "glow": null },
+    "listening": { "stroke": "#F0905C", "glow": "rgba(240,144,92,0.10)" },
+    "mute": { "stroke": "#4A5057", "opacity": 0.55, "slash": true }
+  }
+}

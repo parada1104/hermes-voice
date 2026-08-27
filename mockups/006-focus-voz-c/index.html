@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Focus · C (consola densa)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0b0c0e; --surface:#14161a; --surface2:#1b1e24;
+    --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+    --text:#f4f5f6; --text2:#9aa0aa; --text3:#646a72; --text4:#464c53;
+    --accent:#d97a3f; --accent2:#f0905c; --green:#2fbf8f; --amber:#eab04c;
+    --blue:#6aa6e8; --violet:#a58af0;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .app{display:flex;flex-direction:column;height:100vh;}
+
+  /* compact header with phase badges inline */
+  .header{display:flex;align-items:center;gap:12px;height:46px;padding:0 16px;flex:0 0 46px;border-bottom:1px solid var(--border);background:var(--surface);}
+  .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+  .logo .glyph{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:10px;color:#fff;}
+  .logo .sub{font-size:9.5px;color:var(--text3);font-family:var(--mono);}
+  .h-space{flex:1;}
+  .h-module{font-family:var(--mono);font-size:11px;color:var(--text3);}
+  .h-agent{font-family:var(--mono);font-size:10.5px;color:var(--violet);background:rgba(165,138,240,.1);padding:2px 8px;border-radius:5px;}
+  .phase-badges{display:flex;gap:3px;}
+  .pbadge{font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text3);white-space:nowrap;}
+  .pbadge.on{color:var(--text);border-color:rgba(217,122,63,.45);background:rgba(217,122,63,.1);}
+  .pbadge .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;font-size:0;}
+  .pbadge.on .dot{background:var(--accent2);box-shadow:0 0 6px var(--accent2);animation:pulse 1.4s infinite;}
+  .pbadge.pass{opacity:.3;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* dense two-column */
+  .body{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);min-height:0;}
+  .col{display:flex;flex-direction:column;background:var(--bg);min-height:0;}
+
+  /* console header inside each col */
+  .col-head{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);}
+  .col-head .cnt{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--text4);font-weight:400;}
+  .col-head .st{width:7px;height:7px;border-radius:50%;background:var(--green);}
+
+  /* voice col: live transcript + waveform + phase strip */
+  .col-voice{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:12px;}
+  .waveform{display:flex;align-items:flex-end;gap:2px;height:38px;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;position:sticky;top:0;z-index:2;}
+  .waveform span{flex:1;max-width:6px;border-radius:2px;background:rgba(217,122,63,.55);animation:wv 1s ease-in-out infinite;}
+  .waveform span:nth-child(odd){animation-delay:.15s}
+  @keyframes wv{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  .wf-label{position:absolute;top:-1px;right:8px;font-family:var(--mono);font-size:9px;color:var(--text4);background:var(--surface);padding:0 3px;}
+  .vt-list{display:flex;flex-direction:column;gap:2px;}
+  .vt{display:flex;gap:7px;padding:4px 6px;border-radius:4px;font-size:12px;}
+  .vt:hover{background:var(--surface);}
+  .vt .av{width:16px;height:16px;border-radius:4px;flex:0 0 16px;display:grid;place-items:center;font-size:8px;color:#fff;font-weight:700;}
+  .vt.user .av{background:#3a3f4b;}
+  .vt.hermes .av{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .vt .who{font-size:9px;color:var(--text4);font-family:var(--mono);width:52px;flex:0 0 52px;margin-top:1px;}
+  .vt .bd{font-size:11.5px;color:var(--text2);line-height:1.45;}
+  .vt.hermes .bd{color:var(--text);}
+  .vt .cur{color:var(--accent2);}
+  .caret{display:inline-block;width:1.5px;height:11px;background:var(--accent2);vertical-align:-1px;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0}}
+
+  /* chat col */
+  .col-chat{flex:1;overflow-y:auto;padding:12px 14px;position:relative;}
+  .t-log{display:flex;flex-direction:column;gap:9px;}
+  .tline{display:flex;gap:9px;font-size:12px;}
+  .tline .tag{font-family:var(--mono);font-size:9.5px;color:var(--text4);width:38px;flex:0 0 38px;margin-top:2px;}
+  .tline .bx{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text2);line-height:1.45;}
+  .tline.me .bx{border-color:var(--border2);color:var(--text);}
+  .tline.agent .tag{color:var(--violet);}
+  .tline.deleg .bx{background:rgba(255,255,255,.02);}
+  .tline.deleg .bx .ac{font-size:10px;color:var(--accent2);font-family:var(--mono);}
+  .term{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:var(--mono);font-size:10.5px;color:var(--text3);line-height:1.6;margin-top:6px;}
+  .term .ln{display:block;}
+  .term .p{color:var(--green);}.term .c{color:var(--blue);}.term .o{color:var(--text2);}
+
+  /* composed footer: status + mic */
+  .statusbar{height:26px;flex:0 0 26px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:14px;font-family:var(--mono);font-size:10px;color:var(--text3);}
+  .statusbar .lead{display:flex;align-items:center;gap:6px;color:var(--text2);}
+  .statusbar .lead .d{width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 6px var(--accent2);}
+  .statusbar .sep{color:var(--text4);}
+
+  .composer{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border2);background:var(--surface);}
+  .composer input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 2px;}
+  .composer input::placeholder{color:var(--text4);}
+  .ck{font-family:var(--mono);font-size:10px;color:var(--text4);}
+  .mic{width:38px;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center;box-shadow:0 8px 22px -8px rgba(217,122,63,.7);}
+  .mic:active{transform:scale(.94);}
+  .mic.mute{background:var(--surface2);color:var(--text3);box-shadow:none;}
+
+  @media(max-width:840px){.body{grid-template-columns:1fr;overflow-y:auto;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo"><div class="glyph">❋</div>Hermes Voice<span class="sub">codex-lite</span></div>
+    <div class="h-space"></div>
+    <div class="h-module">· focus-voz</div>
+    <div class="h-agent">orca-7b</div>
+    <div class="phase-badges">
+      <div class="pbadge on"><span class="dot"></span>ESC</div>
+      <div class="pbadge"><span class="dot"></span>TRANS</div>
+      <div class="pbadge"><span class="dot"></span>HAB</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- VOICE COL -->
+    <div class="col">
+      <div class="col-head"><span class="st"></span>Voz · en vivo<span class="cnt">0:14</span></div>
+      <div class="col-voice">
+        <div class="waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="vt-list">
+          <div class="vt hermes"><span class="av">❋</span><span class="who">voice</span><span class="bd">Perfecto, Robert. Delego a Orca: brief kraft minimal para Reserva Los Ríos.</span></div>
+          <div class="vt user"><span class="av">R</span><span class="who">robert</span><span class="bd">Etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, kraft, tipografía limpia.</span></div>
+          <div class="vt hermes"><span class="av">❋</span><span class="who">voice</span><span class="bd">Ya casi está, Señor. El agente va al 64%.<span class="cur"></span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT COL -->
+    <div class="col">
+      <div class="col-head"><span class="st" style="background:var(--amber)"></span>Agentes · sesión<span class="cnt">#182</span></div>
+      <div class="col-chat">
+        <div class="t-log">
+          <div class="tline me"><span class="tag">14:02</span><div class="bx">Etiqueta de café para Venturi — "Reserva Los Ríos".</div></div>
+          <div class="tline deleg"><span class="tag">orca</span><div class="bx"><span class="ac">▸ etiqueta_reserva_v2</span><div class="term"><span class="ln"><span class="p">$</span> <span class="c">comfyui</span>.queue --workflow etiqueta_kraft_v2.json</span><span class="ln"><span class="o">→ queued #182</span></span><span class="ln"><span class="o">→ sampling 64% · 18s</span></span></div></div></div>
+          <div class="tline agent"><span class="tag">orca</span><div class="bx">Render listo: etiqueta_reserva_v2.png · 1024×1024 · validado vs referente.</div></div>
+          <div class="tline me"><span class="tag">14:05</span><div class="bx">Súbelo a la entrega y avísame.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS + COMPOSER -->
+  <div class="statusbar">
+    <span class="lead"><span class="d"></span><span id="stext">ESC · escuchando</span></span>
+    <span class="sep">·</span>
+    <span>modelo orca-7b</span>
+    <span class="sep">·</span>
+    <span>queued #182</span>
+    <span class="sep">·</span>
+    <span>latencia 180ms</span>
+  </div>
+  <div class="composer">
+    <span class="ck">&gt;_</span>
+    <input placeholder="tipo o habla…">
+    <button class="c-btn" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:13px;">📎</button>
+    <button class="mic" id="mic">🎙</button>
+  </div>
+</div>
+
+<script>
+  const mic=document.getElementById('mic');
+  const stext=document.getElementById('stext');
+  const badges=[...document.querySelectorAll('.pbadge')];
+  let ph=0;
+  const names=['ESC','TRANS','HAB'];
+  const ls=['ESC · escuchando','TRANS · transcribiendo','HAB · hablando'];
+  function setPh(i){
+    ph=i;
+    badges.forEach((el,idx)=>{el.classList.toggle('on',idx===i);el.classList.toggle('pass',idx<i);});
+    mic.classList.toggle('mute',i===2);
+    stext.textContent=ls[i];
+  }
+  mic.addEventListener('click',()=>setPh((ph+1)%3));
+  setPh(0);
+</script>
+</body>
+</html>

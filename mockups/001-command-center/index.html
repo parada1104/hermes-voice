@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #08090a;
+    --panel: #0d0e10;
+    --surface: #14151a;
+    --surface2: #191b21;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f2f3f5;
+    --text2: #a7adb8;
+    --text3: #767c87;
+    --text4: #4d525c;
+    --accent: #6f6cf1;
+    --accent2: #8a87ff;
+    --violet: #a78bfa;
+    --green: #10b981;
+    --amber: #f5b94a;
+    --red: #f0605f;
+    --blue: #5aa2f0;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ---------- HEADER ---------- */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 52px;
+    flex: 0 0 52px;
+    background: rgba(13,14,16,0.9);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    z-index: 20;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .brand .logo {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #6f6cf1, #a78bfa);
+    display: grid; place-items: center;
+    font-size: 13px; color: #fff;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 6px 18px -6px rgba(111,108,241,0.6);
+  }
+  .brand .sub {
+    font-size: 12px; color: var(--text3); font-weight: 400; margin-left: 2px;
+  }
+  .agent-select {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 6px 10px;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    transition: border-color .15s;
+  }
+  .agent-select:hover { border-color: var(--accent); }
+  .agent-select .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+  .agent-select .label { font-size: 13px; font-weight: 500; }
+  .agent-select .chev { font-size: 11px; color: var(--text3); }
+  .agent-menu {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 6px;
+    min-width: 210px;
+    display: none;
+    box-shadow: 0 18px 40px -12px rgba(0,0,0,0.8);
+    z-index: 50;
+  }
+  .agent-select.open .agent-menu { display: block; }
+  .agent-menu .opt {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 6px;
+    font-size: 13px; cursor: pointer;
+  }
+  .agent-menu .opt:hover { background: var(--surface); }
+  .agent-menu .opt.active { background: rgba(111,108,241,0.14); }
+  .agent-menu .opt .sig { font-size: 11px; color: var(--text3); margin-left: auto; font-family: var(--mono); }
+  .header-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .status-chip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 10px;
+    background: rgba(16,185,129,0.10);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 999px;
+    font-size: 12px; color: var(--green); font-weight: 500;
+  }
+  .status-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    display: grid; place-items: center;
+    cursor: pointer; font-size: 14px;
+    transition: all .15s;
+  }
+  .icon-btn:hover { background: var(--surface); color: var(--text); border-color: var(--border2); }
+
+  /* ---------- TABS BAR ---------- */
+  .tabbar {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 0 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 40px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px;
+    font-size: 12.5px; color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    position: relative;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+  .tab .ico { font-size: 12px; opacity: .85; }
+  .tab .run {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+  }
+  .tab .run.idle { background: var(--text4); }
+  .tab .run.busy { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse 1.5s infinite; }
+  .tab .closebtn {
+    margin-left: 4px; font-size: 12px; color: var(--text4);
+    border-radius: 4px; width: 16px; height: 16px; display: grid; place-items: center;
+    opacity: 0;
+  }
+  .tab:hover .closebtn { opacity: 1; }
+  .tab .closebtn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+  .tab-new {
+    display: flex; align-items: center;
+    padding: 0 10px; color: var(--text3);
+    cursor: pointer; font-size: 18px;
+  }
+  .tab-new:hover { color: var(--text); }
+
+  /* ---------- LAYOUT ---------- */
+  .body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  /* Sidebar */
+  .sidebar {
+    width: 232px;
+    flex: 0 0 232px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+    transition: width .2s, flex-basis .2s;
+    overflow: hidden;
+  }
+  .sidebar.collapsed { width: 0; flex-basis: 0; border-right: none; }
+  .side-scroll { overflow-y: auto; flex: 1; padding: 0 10px; }
+  .side-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 10px 10px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text4);
+  }
+  .side-head .plus { cursor: pointer; font-size: 14px; color: var(--text3); }
+  .side-head .plus:hover { color: var(--text); }
+  .side-label {
+    padding: 8px 10px 4px;
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text4);
+  }
+  .side-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 13px; color: var(--text2);
+    cursor: pointer;
+    margin-bottom: 1px;
+  }
+  .side-item:hover { background: var(--surface); color: var(--text); }
+  .side-item.active { background: rgba(111,108,241,0.13); color: var(--text); }
+  .side-item .fi { font-size: 13px; opacity: .8; }
+  .side-item .fname { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side-item .cnt { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .side-item .avatar {
+    width: 18px; height: 18px; border-radius: 5px;
+    background: linear-gradient(135deg,#6f6cf1,#a78bfa);
+    display: grid; place-items: center; font-size: 9px; color: #fff; font-weight: 700;
+  }
+  .side-item .avatar.alt1 { background: linear-gradient(135deg,#5aa2f0,#38bdf8); }
+  .side-item .avatar.alt2 { background: linear-gradient(135deg,#f0605f,#f59e0b); }
+  .side-item .avatar.alt3 { background: linear-gradient(135deg,#10b981,#34d399); }
+
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+  }
+  .chat-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 26px 0 120px;
+  }
+  .chat-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .day-divider {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 11.5px; color: var(--text4);
+    margin: 6px 0 2px;
+  }
+  .day-divider::before, .day-divider::after { content:""; flex:1; height:1px; background: var(--border); }
+
+  /* Chat bubbles */
+  .row { display: flex; gap: 12px; }
+  .row.user { justify-content: flex-end; }
+  .bubble-avatar {
+    width: 32px; height: 32px; border-radius: 9px;
+    flex: 0 0 32px;
+    display: grid; place-items: center;
+    font-size: 13px;
+    margin-top: 2px;
+  }
+  .row.user .bubble-avatar { background: linear-gradient(135deg,#3a3d46,#4a4e59); color:#fff; }
+  .row.voice .bubble-avatar { background: linear-gradient(135deg,#6f6cf1,#a78bfa); color:#fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.08); }
+  .row.agent .bubble-avatar { background: linear-gradient(135deg,#23262e,#2c303a); color: var(--violet); }
+  .bubble {
+    max-width: 78%;
+    border-radius: 14px;
+    padding: 11px 14px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .row.user .bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-bottom-right-radius: 5px;
+  }
+  .row.voice .bubble {
+    background: rgba(111,108,241,0.10);
+    border: 1px solid rgba(111,108,241,0.22);
+    border-bottom-left-radius: 5px;
+    color: #eceafc;
+  }
+  .row.voice .bubble .speaker {
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 7px;
+  }
+  .row.voice .bubble .speaker .sp-label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--violet);
+  }
+  .bubble .meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; font-size: 11px; color: var(--text4);
+  }
+  .bubble .meta .tag {
+    padding: 2px 7px; border-radius: 5px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10.5px; color: var(--text3);
+  }
+  .bubble .meta .tag.accent { color: var(--accent2); border-color: rgba(111,108,241,0.3); background: rgba(111,108,241,0.08); }
+  .wave {
+    display: inline-flex; align-items: flex-end; gap: 2.5px; height: 13px;
+    margin-right: 2px;
+  }
+  .wave span {
+    width: 3px; border-radius: 2px;
+    background: var(--violet);
+    animation: wave 1s ease-in-out infinite;
+  }
+  .wave span:nth-child(1){height:40%;animation-delay:0s}
+  .wave span:nth-child(2){height:100%;animation-delay:.15s}
+  .wave span:nth-child(3){height:70%;animation-delay:.3s}
+  .wave span:nth-child(4){height:95%;animation-delay:.45s}
+  @keyframes wave { 0%,100%{transform:scaleY(.5)} 50%{transform:scaleY(1)} }
+
+  /* Delegation collapsed */
+  .deleg {
+    margin-left: 44px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--surface);
+    overflow: hidden;
+    font-size: 13px;
+  }
+  .deleg-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .deleg-head:hover { background: rgba(255,255,255,0.02); }
+  .deleg-head .chev {
+    font-size: 10px; color: var(--text3);
+    transition: transform .2s;
+    width: 14px;
+  }
+  .deleg.open .deleg-head .chev { transform: rotate(90deg); }
+  .deleg-head .d-ico { font-size: 13px; }
+  .deleg-head .d-title { font-weight: 500; }
+  .deleg-head .d-agent {
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--violet);
+    background: rgba(111,108,241,0.1);
+    padding: 1px 8px; border-radius: 5px;
+    margin-left: 2px;
+  }
+  .deleg-head .d-status {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 500;
+  }
+  .deleg-head .d-status .st-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .deleg-head .d-status.run { color: var(--amber); }
+  .deleg-head .d-status.run .st-dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse 1.4s infinite; }
+  .deleg-head .d-status.done { color: var(--green); }
+  .deleg-head .d-status.done .st-dot { background: var(--green); }
+  .deleg-head .d-status.idle { color: var(--text3); }
+  .deleg-head .d-status.idle .st-dot { background: var(--text4); }
+  .deleg-head .d-status .pr {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text3);
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    padding: 0 6px; border-radius: 4px;
+  }
+  .deleg-body {
+    display: none;
+    padding: 0 12px 12px;
+    gap: 10px;
+    flex-direction: column;
+  }
+  .deleg.open .deleg-body { display: flex; }
+  .deleg-body .db-line {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 13px; color: var(--text2);
+  }
+  .deleg-body .db-line .dbk { font-family: var(--mono); font-size: 11px; color: var(--text4); width: 30px; flex: 0 0 30px; margin-top: 1px; }
+  .deleg-body .db-line .dbv { flex: 1; }
+  .deleg-body .db-line code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    padding: 2px 5px; border-radius: 4px; color: var(--text2);
+  }
+  .mini-terminal {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.7;
+  }
+  .mini-terminal .ln { display: block; }
+  .mini-terminal .ln .p { color: var(--green); }
+  .mini-terminal .ln .c { color: var(--blue); }
+  .mini-terminal .ln .o { color: var(--text2); }
+
+  /* typing indicator */
+  .typing { display: flex; align-items: center; gap: 4px; padding: 4px 2px; }
+  .typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); animation: pulse 1.2s infinite; }
+  .typing span:nth-child(2){animation-delay:.2s}
+  .typing span:nth-child(3){animation-delay:.4s}
+
+  /* Composer */
+  .composer-wrap {
+    position: absolute;
+    bottom: 18px; left: 0; right: 0;
+    padding: 0 24px;
+    display: flex; justify-content: center;
+    pointer-events: none;
+  }
+  .composer {
+    pointer-events: auto;
+    width: 100%; max-width: 700px;
+    background: rgba(20,21,26,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.7);
+    padding: 12px 14px;
+    display: flex; align-items: flex-end; gap: 10px;
+  }
+  .composer.focused { border-color: var(--accent); }
+  .composer textarea {
+    flex: 1;
+    background: transparent;
+    border: none; resize: none;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; line-height: 1.5;
+    max-height: 140px;
+    outline: none;
+    padding: 4px 0;
+  }
+  .composer textarea::placeholder { color: var(--text4); }
+  .composer .cactions {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .c-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text3);
+    display: grid; place-items: center;
+    cursor: pointer; font-size: 13px;
+    transition: all .15s;
+  }
+  .c-btn:hover { background: var(--surface2); color: var(--text); }
+  /* Mic button */
+  .mic-btn {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #6f6cf1, #a78bfa);
+    color: #fff; font-size: 19px;
+    cursor: pointer;
+    display: grid; place-items: center;
+    position: relative;
+    box-shadow: 0 10px 26px -8px rgba(111,108,241,0.7);
+    transition: transform .15s, box-shadow .3s;
+  }
+  .mic-btn:hover { transform: translateY(-1px); }
+  .mic-btn:active { transform: scale(0.94); }
+  .mic-btn.halt { background: linear-gradient(135deg,#f0605f,#f59e0b); box-shadow: 0 10px 26px -8px rgba(240,96,95,0.7); }
+  .mic-ring {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid rgba(111,108,241,0.4);
+    opacity: 0;
+  }
+  .mic-btn.listening .mic-ring {
+    opacity: 1;
+    animation: ripple 1.6s infinite;
+    border-color: rgba(90,162,240,0.6);
+  }
+  .mic-btn.speaking .mic-ring {
+    opacity: 1;
+    animation: ripple 1.2s infinite;
+    border-color: rgba(167,139,250,0.7);
+  }
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.55); opacity: 0; }
+  }
+
+  /* Voice phase chip (above composer) */
+  .voice-phases {
+    position: absolute;
+    bottom: 78px; left: 0; right: 0;
+    display: flex; justify-content: center;
+    pointer-events: none;
+  }
+  .vp-row {
+    pointer-events: auto;
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(20,21,26,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 4px 6px;
+  }
+  .vp {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px; color: var(--text3);
+    font-weight: 500;
+    transition: all .2s;
+  }
+  .vp .vp-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text4); }
+  .vp.active {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+  .vp.active .vp-dot { background: var(--accent2); box-shadow: 0 0 7px var(--accent2); }
+  .vp.off { opacity: .35; }
+
+  @media (max-width: 900px) {
+    .sidebar { position: absolute; left: 0; top: 52px; bottom: 0; z-index: 30; box-shadow: 0 0 40px rgba(0,0,0,.6); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <button class="icon-btn" id="collapseSide" title="Toggle sidebar">☰</button>
+    <div class="brand">
+      <div class="logo">✳</div>
+      <span>Hermes Voice</span>
+      <span class="sub">· Codex-lite</span>
+    </div>
+
+    <div class="agent-select" id="agentSelect">
+      <span class="dot"></span>
+      <span class="label">Orca</span>
+      <span class="chev">▾</span>
+      <div class="agent-menu" id="agentMenu">
+        <div class="opt active" data-agent="Orca" data-sig="orca-7b"><span class="dot" style="background:var(--green)"></span>Orca<span class="sig">orca-7b</span></div>
+        <div class="opt" data-agent="Composer" data-sig="composer-2.5"><span class="dot" style="background:var(--blue)"></span>Composer<span class="sig">composer-2.5</span></div>
+        <div class="opt" data-agent="Pi" data-sig="pi-gentle"><span class="dot" style="background:var(--violet)"></span>Pi<span class="sig">pi-gentle</span></div>
+        <div class="opt" data-agent="Opus" data-sig="claude-opus-4.8"><span class="dot" style="background:var(--amber)"></span>Opus<span class="sig">claude-opus-4.8</span></div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="status-chip" id="statusChip"><span class="dot"></span><span id="statusText">Escuchando</span></div>
+      <button class="icon-btn">⚙</button>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tabbar" id="tabbar">
+    <div class="tab active"><span class="ico">🎙</span>Venturi · etiquetas<span class="run busy"></span><span class="closebtn">✕</span></div>
+    <div class="tab"><span class="ico">🛠</span>Sazón · reel<span class="run"></span><span class="closebtn">✕</span></div>
+    <div class="tab"><span class="ico">⚡</span>tech-market-ai<span class="run idle"></span><span class="closebtn">✕</span></div>
+    <div class="tab"><span class="ico">📸</span>sorteo-instagram<span class="run idle"></span><span class="closebtn">✕</span></div>
+    <div class="tab-new" title="Nueva sesión">+</div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="side-head">
+        <span>Sesiones</span>
+        <span class="plus">＋</span>
+      </div>
+      <div class="side-scroll">
+        <div class="side-label">Proyectos</div>
+        <div class="side-item active"><span class="avatar">V</span><span class="fname">Venturi Coffee</span><span class="cnt">4</span></div>
+        <div class="side-item"><span class="avatar alt1">S</span><span class="fname">Sazón Cruz</span><span class="cnt">2</span></div>
+        <div class="side-item"><span class="avatar alt2">T</span><span class="fname">tech-market-ai</span><span class="cnt">1</span></div>
+        <div class="side-item"><span class="avatar alt3">I</span><span class="fname">sorteo-instagram</span><span class="cnt">1</span></div>
+        <div class="side-item"><span class="fi">🗂</span><span class="fname">IRAM Studios</span><span class="cnt">0</span></div>
+
+        <div class="side-label">Agentes activos</div>
+        <div class="side-item"><span class="fi">🧠</span><span class="fname">Orca</span><span class="cnt">busy</span></div>
+        <div class="side-item"><span class="fi">🤖</span><span class="fname">Composer</span><span class="cnt">idle</span></div>
+        <div class="side-item"><span class="fi">🧑‍💻</span><span class="fname">Pi</span><span class="cnt">idle</span></div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <div class="chat-scroll" id="chatScroll">
+        <div class="chat-inner">
+
+          <div class="day-divider">Hoy</div>
+
+          <!-- user -->
+          <div class="row user">
+            <div class="bubble">
+              Robert: dame una etiqueta de café para Venturi — "Reserva Los Ríos". Tono minimal, papel kraft, tipografía limpia.
+              <div class="meta">14:02</div>
+            </div>
+            <div class="bubble-avatar">R</div>
+          </div>
+
+          <!-- voice-->
+          <div class="row voice">
+            <div class="bubble-avatar">🎙</div>
+            <div class="bubble">
+              <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sp-label">Voz</span></div>
+              Perfecto, Robert. Voy a delegar esto a Orca: brief de etiqueta kraft minimal para Reserva Los Ríos, con tipografía limpia y estética Venturi. Ya está trabajando en la generación.
+              <div class="meta">
+                <span class="tag accent">→ Orca</span>
+                <span>delegado hace 2 min</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- delegation collapsed -->
+          <div class="deleg open" id="delegA">
+            <div class="deleg-head" data-deleg>
+              <span class="chev">▶</span>
+              <span class="d-ico">🛠</span>
+              <span class="d-title">Etiqueta Reserva Los Ríos</span>
+              <span class="d-agent">orca-7b</span>
+              <span class="d-status run"><span class="st-dot"></span>Ejecutando<span class="pr">ComfyUI</span></span>
+            </div>
+            <div class="deleg-body">
+              <div class="db-line"><span class="dbk">brief</span><span class="dbv">Etiqueta café kraft, minimal, "RESERVA LOS RÍOS", tipografía limpia, estética Venturi.</span></div>
+              <div class="db-line"><span class="dbk">flujo</span><span class="dbv"><code>flux2</code> → <code>compositing</code> → <code>etiqueta</code></span></div>
+              <div class="mini-terminal">
+                <span class="ln"><span class="p">$</span> <span class="c">comfyui</span>.queue --workflow etiqueta_kraft_v2.json</span>
+                <span class="ln"><span class="o">→ queued #182</span></span>
+                <span class="ln"><span class="o">→ sampling 64% · 18s</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- voice speaking response -->
+          <div class="row voice">
+            <div class="bubble-avatar">🎙</div>
+            <div class="bubble">
+              <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sp-label">Hablando</span></div>
+              Ya casi está, Señor. El agente está en un 64% de la generación; en unos segundos te muestro el render y lo validamos contra el referente de la línea Reserva.
+              <div class="meta">
+                <span class="tag">voz → texto</span>
+                <span>transcribiendo</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row agent">
+            <div class="bubble-avatar">🤖</div>
+            <div class="bubble">
+              Render listo: <code style="font-family:var(--mono);font-size:12px">etiqueta_reserva_v2.png</code> · 1024×1024 · comprobado contra referente.
+              <div class="meta"><span class="tag accent">Orca</span><span class="tag">done</span><span class="tag">render #182</span></div>
+            </div>
+          </div>
+
+          <!-- user followup -->
+          <div class="row user">
+            <div class="bubble">
+              Genial, súbela a la entrega y avísame cuando esté.
+              <div class="meta">14:05</div>
+            </div>
+            <div class="bubble-avatar">R</div>
+          </div>
+
+          <div class="row voice">
+            <div class="bubble-avatar">🎙</div>
+            <div class="bubble">
+              <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sp-label">Voz</span></div>
+              Listo. La subo al workspace de Venturi y te dejo la ruta. ¿Quieres que además prepare una variante vertical para el post de Instagram?
+              <div class="meta"><span class="tag accent">→ Composer</span></div>
+            </div>
+          </div>
+
+          <div class="row voice">
+            <div class="bubble-avatar">🎙</div>
+            <div class="bubble">
+              <div class="typing"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- voice phases -->
+      <div class="voice-phases" id="voicePhases">
+        <div class="vp-row">
+          <div class="vp active" data-phase="escuchando"><span class="vp-dot"></span>Escuchando</div>
+          <div class="vp off" data-phase="transcribiendo"><span class="vp-dot"></span>Transcribiendo</div>
+          <div class="vp off" data-phase="hablando"><span class="vp-dot"></span>Hablando</div>
+        </div>
+      </div>
+
+      <!-- composer -->
+      <div class="composer-wrap">
+        <div class="composer" id="composer">
+          <textarea rows="1" placeholder="Escribe a Hermes, o habla con el botón…"></textarea>
+          <div class="cactions">
+            <button class="c-btn" title="Adjuntar">📎</button>
+            <button class="c-btn" title="Comandos">⚡</button>
+            <button class="mic-btn" id="micBtn" title="Hablar">
+              🎙
+              <span class="mic-ring"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Agent selector
+  const agentSelect = document.getElementById('agentSelect');
+  const agentMenu = document.getElementById('agentMenu');
+  agentSelect.addEventListener('click', e => {
+    if (e.target.closest('.agent-menu')) return;
+    agentSelect.classList.toggle('open');
+  });
+  agentMenu.querySelectorAll('.opt').forEach(o => {
+    o.addEventListener('click', () => {
+      agentMenu.querySelectorAll('.opt').forEach(x=>x.classList.remove('active'));
+      o.classList.add('active');
+      agentSelect.querySelector('.label').textContent = o.dataset.agent;
+      agentSelect.classList.remove('open');
+    });
+  });
+  document.addEventListener('click', e => { if(!agentSelect.contains(e.target)) agentSelect.classList.remove('open'); });
+
+  // Sidebar collapse
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('collapseSide').addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+
+  // Tabs
+  document.querySelectorAll('.tabbar .tab').forEach(tab => {
+    tab.addEventListener('click', e => {
+      if (e.target.closest('.closebtn')) { tab.remove(); return; }
+      document.querySelectorAll('.tabbar .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // Delegations collapse
+  document.querySelectorAll('[data-deleg]').forEach(h => {
+    h.addEventListener('click', () => h.closest('.deleg').classList.toggle('open'));
+  });
+
+  // Voice phases cycling + mic state
+  const micBtn = document.getElementById('micBtn');
+  const phases = ['escuchando','transcribiendo','hablando'];
+  const vpEls = document.querySelectorAll('#voicePhases .vp');
+  const statusText = document.getElementById('statusText');
+  const statusChip = document.getElementById('statusChip');
+  let uiPhase = 0;
+  function setPhase(i) {
+    uiPhase = i;
+    vpEls.forEach((el,idx) => {
+      el.classList.toggle('active', idx===i);
+      el.classList.toggle('off', idx<i);
+    });
+    const names = {0:'Escuchando',1:'Transcribiendo',2:'Hablando'};
+    statusText.textContent = names[i];
+    micBtn.classList.remove('listening','speaking');
+    if(i===0){ micBtn.classList.add('listening'); }
+    if(i===2){ micBtn.classList.add('speaking'); }
+    if(i===1){ statusChip.style.borderColor='rgba(90,162,240,0.4)'; }
+  }
+  micBtn.addEventListener('click', () => {
+    setPhase((uiPhase+1) % 3);
+  });
+  setPhase(0);
+
+  // Side items
+  document.querySelectorAll('.side-item').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('.side-item').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — Split Pane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0b0d;
+    --rail: #101114;
+    --panel: #14161b;
+    --term: #0d0e11;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f1f4;
+    --text2: #9aa0aa;
+    --text3: #62676f;
+    --text4: #444a52;
+    --accent: #9b6cf5;
+    --accent2: #b58cff;
+    --green: #22c58b;
+    --amber: #f0b14a;
+    --red: #ef5f5f;
+    --blue: #5aa2f0;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh; overflow: hidden;
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: flex; height: 100vh; }
+
+  /* Rail */
+  .rail {
+    width: 62px; flex: 0 0 62px;
+    background: var(--rail);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0; gap: 6px;
+  }
+  .rail .appmark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg,#9b6cf5,#c98bff);
+    display: grid; place-items: center;
+    font-size: 15px; color: #fff;
+    margin-bottom: 14px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 8px 20px -8px rgba(155,108,245,0.6);
+  }
+  .rail .r-btn {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: grid; place-items: center;
+    font-size: 15px; color: var(--text3);
+    cursor: pointer; position: relative;
+    margin-bottom: 2px;
+    transition: all .15s;
+  }
+  .rail .r-btn:hover { background: var(--panel); color: var(--text); }
+  .rail .r-btn.active { background: var(--panel); color: var(--accent2); }
+  .rail .r-btn .bdg {
+    position: absolute; top: 5px; right: 6px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .rail .gap { flex: 1; }
+  .rail .r-pill {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg,#3a3f4b,#4a5060);
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 600; color: #fff;
+    cursor: pointer;
+  }
+
+  /* Column 1: sessions + chat */
+  .col {
+    display: flex; flex-direction: column;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  .col.agents { flex: 1.3 1 0; border-left: 1px solid var(--border); }
+
+  /* Sessions column */
+  .sessions {
+    width: 248px; flex: 0 0 248px;
+    background: var(--rail);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .sessions .sh {
+    padding: 16px 14px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sessions .sh .t {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .sessions .sh .n { font-size: 12px; color: var(--text3); }
+  .sessions .new-btn {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--accent); color: #fff; border: none;
+    display: grid; place-items: center; font-size: 15px; cursor: pointer;
+  }
+  .sessions .new-btn:hover { background: var(--accent2); }
+  .sess-scroll { overflow-y: auto; flex: 1; padding: 6px 10px; }
+  .sess-group {
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--text4);
+    padding: 12px 8px 6px;
+  }
+  .sess {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    position: relative;
+  }
+  .sess:hover { background: var(--panel); }
+  .sess.active { background: var(--panel); }
+  .sess.active::before {
+    content:""; position: absolute; left: 0; top: 9px; bottom: 9px;
+    width: 3px; border-radius: 3px; background: var(--accent);
+  }
+  .sess .s-ico {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: grid; place-items: center; font-size: 12px;
+    background: rgba(255,255,255,0.06); flex: 0 0 26px;
+  }
+  .sess .s-body { flex: 1; min-width: 0; }
+  .sess .s-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess .s-sub { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess .s-time { font-size: 10.5px; color: var(--text4); font-family: var(--mono); }
+
+  /* Chat column */
+  .ch-ath {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    height: 50px; flex: 0 0 50px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(16,17,20,0.6);
+    backdrop-filter: blur(10px);
+  }
+  .ch-ath .a-av {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg,#9b6cf5,#c98bff);
+    display: grid; place-items: center; color:#fff; font-size: 12px;
+  }
+  .ch-ath .a-t { font-size: 14px; font-weight: 500; }
+  .ch-ath .a-s { font-size: 11px; color: var(--text3); }
+  .ch-ath .spacer { flex: 1; }
+  .ch-ath .chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 500; font-family: var(--mono);
+    background: rgba(34,197,139,0.1); border: 1px solid rgba(34,197,139,0.28);
+    color: var(--green);
+  }
+  .ch-ath .chip .d { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow:0 0 6px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .ch-ath .agent-pills { display: flex; gap: 5px; }
+  .ch-ath .agent-pills .a-p {
+    padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 500;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text2); cursor: pointer;
+  }
+  .ch-ath .agent-pills .a-p.on { background: rgba(155,108,245,0.16); border-color: rgba(155,108,245,0.4); color: var(--accent2); }
+
+  .chat-scroll { flex: 1; overflow-y: auto; padding: 22px 18px 120px; }
+  .chat-inner { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  .day-div { display:flex; align-items:center; gap:12px; font-size:11px; color:var(--text4); margin:4px 0 2px; }
+  .day-div::before,.day-div::after{content:"";flex:1;height:1px;background:var(--border);}
+
+  .bubble-row { display:flex; gap: 11px; }
+  .bubble-row.me { flex-direction: row-reverse; }
+  .b-av {
+    width: 30px; height: 30px; border-radius: 8px; flex: 0 0 30px;
+    display:grid; place-items:center; font-size:12px; margin-top:2px;
+  }
+  .bubble-row.me .b-av { background: linear-gradient(135deg,#383d4a,#4a5162); color:#fff; }
+  .bubble-row.voice .b-av { background: linear-gradient(135deg,#9b6cf5,#c98bff); color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,0.08); }
+  .bubble-row.agent .b-av { background: linear-gradient(135deg,#1f2230,#2a2e3e); color: var(--accent2); }
+  .bubble {
+    max-width: 78%;
+    padding: 10px 13px;
+    border-radius: 13px;
+    font-size: 14px; line-height: 1.55;
+  }
+  .bubble-row.me .bubble { background: var(--panel); border: 1px solid var(--border2); border-bottom-right-radius: 4px; }
+  .bubble-row.voice .bubble { background: rgba(155,108,245,0.10); border: 1px solid rgba(155,108,245,0.22); border-bottom-left-radius:4px; }
+  .bubble-row.agent .bubble { background: rgba(255,255,255,0.03); border:1px solid var(--border); border-bottom-left-radius:4px; }
+  .speaker { display:flex; align-items:center; gap:7px; margin-bottom:6px; }
+  .speaker .sp-l { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color: var(--accent2); }
+  .wave { display:inline-flex; align-items:flex-end; gap:2.5px; height:12px; }
+  .wave span { width:3px; border-radius:2px; background:var(--accent2); animation:wave 1s ease-in-out infinite; }
+  .wave span:nth-child(1){height:40%;animation-delay:0s}
+  .wave span:nth-child(2){height:100%;animation-delay:.15s}
+  .wave span:nth-child(3){height:70%;animation-delay:.3s}
+  .wave span:nth-child(4){height:95%;animation-delay:.45s}
+  @keyframes wave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+  .meta { display:flex; align-items:center; gap:7px; margin-top:7px; font-size:11px; color:var(--text4); flex-wrap:wrap; }
+  .meta .tag { padding:1px 7px; border-radius:5px; background:rgba(255,255,255,0.05); border:1px solid var(--border); font-family:var(--mono); font-size:10px; color:var(--text3); }
+  .meta .tag .g { color: var(--green); }
+
+  /* delegation (collapsed style for this variant) */
+  .deleg { margin-left: 41px; border:1px solid var(--border); border-radius:10px; background:var(--panel); overflow:hidden; font-size:13px; }
+  .deleg-head { display:flex; align-items:center; gap:9px; padding:9px 12px; cursor:pointer; }
+  .deleg-head:hover{background:rgba(255,255,255,0.02);}
+  .deleg-head .chev{font-size:9px;color:var(--text3);transition:transform .2s;width:13px;}
+  .deleg.open .deleg-head .chev{transform:rotate(90deg);}
+  .deleg-head .t{font-weight:500;}
+  .deleg-head .ag{font-family:var(--mono);font-size:10px;color:var(--accent2);background:rgba(155,108,245,0.1);padding:1px 8px;border-radius:5px;}
+  .deleg-head .st{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;}
+  .deleg-head .st .dot{width:6px;height:6px;border-radius:50%;}
+  .deleg-head .st.run{color:var(--amber);}
+  .deleg-head .st.run .dot{background:var(--amber);box-shadow:0 0 5px var(--amber);animation:pulse 1.4s infinite;}
+  .deleg-head .st.done{color:var(--green);}
+  .deleg-head .st.done .dot{background:var(--green);}
+  .deleg-head .st.idle{color:var(--text3);}
+  .deleg-head .st.idle .dot{background:var(--text4);}
+  .deleg-body{display:none;padding:0 12px 12px;flex-direction:column;gap:9px;}
+  .deleg.open .deleg-body{display:flex;}
+  .db-line{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--text2);}
+  .db-line .k{font-family:var(--mono);font-size:11px;color:var(--text4);width:28px;flex:0 0 28px;margin-top:1px;}
+  .db-line .v{flex:1;}
+  .mini-term{background:var(--term);border:1px solid var(--border);border-radius:7px;padding:9px 11px;font-family:var(--mono);font-size:11.5px;color:var(--text3);line-height:1.7;}
+  .mini-term .ln{display:block;}
+  .mini-term .p{color:var(--green);} .mini-term .c{color:var(--blue);} .mini-term .o{color:var(--text2);}
+
+  /* composer bottom (chat col) */
+  .composer-wrap{position:absolute;bottom:16px;left:0;right:0;padding:0 20px;display:flex;justify-content:center;pointer-events:none;}
+  .composer{pointer-events:auto;width:100%;max-width:680px;background:rgba(20,22,27,0.92);backdrop-filter:blur(14px);border:1px solid var(--border2);border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);padding:11px 13px;display:flex;align-items:flex-end;gap:9px;}
+  .composer textarea{flex:1;background:transparent;border:none;resize:none;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;max-height:140px;outline:none;padding:3px 0;}
+  .composer textarea::placeholder{color:var(--text4);}
+  .cactions{display:flex;align-items:center;gap:5px;}
+  .c-btn{width:29px;height:29px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);display:grid;place-items:center;cursor:pointer;font-size:13px;transition:all .15s;}
+  .c-btn:hover{background:var(--panel);color:var(--text);}
+  .mic{width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,#9b6cf5,#c98bff);color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center;position:relative;box-shadow:0 10px 26px -8px rgba(155,108,245,.75);transition:transform .15s;}
+  .mic:hover{transform:translateY(-1px);}
+  .mic:active{transform:scale(.94);}
+  .mic.halt{background:linear-gradient(135deg,#ef5f5f,#f0b14a);box-shadow:0 10px 26px -8px rgba(239,95,95,.7);}
+  .mic-ring{position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(155,108,245,.4);opacity:0;pointer-events:none;}
+  .mic.listen .mic-ring{opacity:1;border-color:rgba(90,162,240,.6);animation:ripple 1.6s infinite;}
+  .mic.speak .mic-ring{opacity:1;border-color:rgba(201,139,255,.7);animation:ripple 1.2s infinite;}
+  @keyframes ripple{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.55);opacity:0}}
+
+  /* voice phases */
+  .voice-phases{position:absolute;bottom:76px;left:0;right:0;display:flex;justify-content:center;pointer-events:none;}
+  .vp-row{pointer-events:auto;display:flex;align-items:center;gap:3px;background:rgba(20,22,27,0.85);backdrop-filter:blur(10px);border:1px solid var(--border2);border-radius:999px;padding:3px 5px;}
+  .vp{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;color:var(--text3);font-weight:500;transition:all .2s;}
+  .vp .d{width:6px;height:6px;border-radius:50%;background:var(--text4);}
+  .vp.on{color:var(--text);background:rgba(255,255,255,0.06);}
+  .vp.on .d{background:var(--accent2);box-shadow:0 0 7px var(--accent2);}
+  .vp.off{opacity:.35;}
+
+  /* Agent terminal pane (col 2) */
+  .term-header{display:flex;align-items:center;gap:10px;padding:10px 16px;height:50px;flex:0 0 50px;border-bottom:1px solid var(--border);background:rgba(16,17,20,0.6);}
+  .term-header .t{font-size:13px;font-weight:500;}
+  .term-header .s{font-size:10.5px;color:var(--text3);font-family:var(--mono);}
+  .term-header .spacer{flex:1;}
+  .term-header .dot3{display:flex;gap:4px;}
+  .term-header .dot3 i{width:9px;height:9px;border-radius:50%;background:var(--text4);display:block;}
+  .term-body{flex:1;overflow-y:auto;background:var(--term);padding:14px 16px;}
+  .term-line{font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--text2);}
+  .term-line .p{color:var(--green);}
+  .term-line .hd{color:var(--text);font-weight:600;}
+  .term-line .dim{color:var(--text4);}
+  .term-line .ok{color:var(--green);}
+  .term-line .warn{color:var(--amber);}
+  .term-block{margin:8px 0;font-family:var(--mono);font-size:12px;line-height:1.7;}
+  .term-block .ln{display:block;color:var(--text3);}
+  .term-block .ln .k{color:var(--blue);}
+  .term-block .ln .v{color:var(--text2);}
+  .term-cursor{color:var(--green);animation:pulse 1s infinite;}
+
+  @media(max-width:1100px){ .agents{display:none;} .sessions{width:200px;} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- RAIL -->
+  <div class="rail">
+    <div class="appmark">✳</div>
+    <div class="r-btn active" title="Voz">🎙<span class="bdg"></span></div>
+    <div class="r-btn" title="Chat">💬</div>
+    <div class="r-btn" title="Agentes">🤖</div>
+    <div class="r-btn" title="Archivos">📁</div>
+    <div class="gap"></div>
+    <div class="r-btn" title="Ajustes">⚙</div>
+    <div class="r-pill">R</div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div class="sessions">
+    <div class="sh">
+      <div>
+        <div class="t">Sesiones</div>
+        <div class="n">Hermes Voice</div>
+      </div>
+      <button class="new-btn">+</button>
+    </div>
+    <div class="sess-scroll">
+      <div class="sess-group">Hoy</div>
+      <div class="sess active">
+        <div class="s-ico">🎙</div>
+        <div class="s-body"><div class="s-name">Etiqueta Reserva</div><div class="s-sub">Venturi · Orca</div></div>
+        <div class="s-time">2m</div>
+      </div>
+      <div class="sess">
+        <div class="s-ico">🛠</div>
+        <div class="s-body"><div class="s-name">Reel Sazón</div><div class="s-sub">Sazón Cruz · Composer</div></div>
+        <div class="s-time">1h</div>
+      </div>
+      <div class="sess">
+        <div class="s-ico">📸</div>
+        <div class="s-body"><div class="s-name">Sorteo IG</div><div class="s-sub">Sazón · Pi</div></div>
+        <div class="s-time">3h</div>
+      </div>
+      <div class="sess">
+        <div class="s-ico">⚡</div>
+        <div class="s-body"><div class="s-name">tech-market-ai</div><div class="s-sub">docs · Opus</div></div>
+        <div class="s-time">ay</div>
+      </div>
+
+      <div class="sess-group">Ayer</div>
+      <div class="sess">
+        <div class="s-ico">🗂</div>
+        <div class="s-body"><div class="s-name">IRAM Studios</div><div class="s-sub">propuesta · Orca</div></div>
+        <div class="s-time">ay</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT COLUMN -->
+  <div class="col" style="position:relative;">
+    <div class="ch-ath">
+      <div class="a-av">H</div>
+      <div>
+        <div class="a-t">Hermes Voice</div>
+        <div class="a-s">asistente · voz + chat</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="agent-pills">
+        <div class="a-p on">Orca</div>
+        <div class="a-p">Composer</div>
+        <div class="a-p">Pi</div>
+      </div>
+      <div class="chip"><span class="d"></span>Escuchando</div>
+    </div>
+
+    <div class="chat-scroll">
+      <div class="chat-inner">
+        <div class="day-div">Hoy</div>
+
+        <div class="bubble-row me">
+          <div class="bubble">Robert: etiqueta café kraft para Venturi — "Reserva Los Ríos". Minimal, tipografía limpia.</div>
+          <div class="b-av">R</div>
+        </div>
+
+        <div class="bubble-row voice">
+          <div class="b-av">🎙</div>
+          <div class="bubble">
+            <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sp-l">Voz</span></div>
+            Entendido. Delego el brief a Orca en la sesión de Venturi; el agente está lanzando el flujo de ComfyUI.
+            <div class="meta"><span class="tag">→ Orca</span><span>hace 2 min</span></div>
+          </div>
+        </div>
+
+        <div class="deleg open">
+          <div class="deleg-head">
+            <span class="chev">▶</span><span class="t">Etiqueta Reserva Los Ríos</span><span class="ag">orca-7b</span>
+            <span class="st run"><span class="dot"></span>Ejecutando</span>
+          </div>
+          <div class="deleg-body">
+            <div class="db-line"><span class="k">brief</span><span class="v">Etiqueta café kraft minimal "RESERVA LOS RÍOS", estética Venturi.</span></div>
+            <div class="db-line"><span class="k">flujo</span><span class="v"><span style="font-family:var(--mono);font-size:12px">flux2 → compositing → etiqueta</span></span></div>
+            <div class="mini-term">
+              <span class="ln"><span class="p">$</span> <span class="c">comfyui</span>.queue --workflow etiqueta_kraft_v2.json</span>
+              <span class="ln"><span class="o">→ queued #182 · sampling 64%</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bubble-row voice">
+          <div class="b-av">🎙</div>
+          <div class="bubble">
+            <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sp-l">Hablando</span></div>
+            Va al 64%. En un momento te paso el render validado contra la línea Reserva, Señor.
+            <div class="meta"><span class="tag">voz → texto</span><span>transcribiendo</span></div>
+          </div>
+        </div>
+
+        <div class="bubble-row agent">
+          <div class="b-av">🤖</div>
+          <div class="bubble">Render listo: <span style="font-family:var(--mono);font-size:12px">etiqueta_reserva_v2.png</span> <span class="meta"><span class="tag">done</span><span class="tag">#182</span></span></div>
+        </div>
+
+        <div class="bubble-row me">
+          <div class="bubble">Súbelo a la entrega y avísame.</div>
+          <div class="b-av">R</div>
+        </div>
+
+        <div class="bubble-row voice">
+          <div class="b-av">🎙</div>
+          <div class="bubble">
+            <div class="speaker"><span class="wave"><span></span><span></span><span></span><span></span></span><span class="sp-l">Voz</span></div>
+            Listo, subía al workspace de Venturi. ¿Preparo también la variante 4:5 para el post?
+            <div class="meta"><span class="tag">→ Composer</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="voice-phases">
+      <div class="vp-row">
+        <div class="vp on"><span class="d"></span>Escuchando</div>
+        <div class="vp off"><span class="d"></span>Transcribiendo</div>
+        <div class="vp off"><span class="d"></span>Hablando</div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea rows="1" placeholder="Escribe a Hermes, o toca el mic…"></textarea>
+        <div class="cactions">
+          <button class="c-btn">📎</button>
+          <button class="c-btn">⚡</button>
+          <button class="mic" id="micB">🎙<span class="mic-ring"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT TERMINAL COLUMN -->
+  <div class="col agents">
+    <div class="term-header">
+      <div class="t">Orca · terminal</div>
+      <div class="s">comfyui · flux2</div>
+      <div class="spacer"></div>
+      <div class="dot3"><i></i><i></i><i></i></div>
+    </div>
+    <div class="term-body">
+      <div class="term-line"><span class="p">orca@hermes:~$</span> <span class="hd">comfyui</span> run --workflow etiqueta_kraft_v2.json --agent orca-7b</div>
+      <div class="term-line"><span class="dim"># brief: Etiqueta café kraft minimal · Reserva Los Ríos</span></div>
+      <div class="term-block">
+        <span class="ln"><span class="k">→</span> <span class="v">Cargando flujo flux2 …</span></span>
+        <span class="ln"><span class="k">→</span> <span class="v">Queued job #182</span></span>
+        <span class="ln"><span class="k">→</span> <span class="v">Sampling… 64%</span> <span class="ok">[18s]</span></span>
+        <span class="ln"><span class="k">→</span> <span class="v">Compositing etiqueta sobre foto kraft</span></span>
+        <span class="ln"><span class="k">→</span> <span class="v">Validando contra referente Venturi</span> <span class="warn">[check ~8.6]</span></span>
+      </div>
+      <div class="term-line"><span class="p">orca@hermes:~$</span> <span class="hd">queue</span> --status</div>
+      <div class="term-block">
+        <span class="ln"><span class="k">#182</span> <span class="v">Sampling · 64%</span></span>
+        <span class="ln"><span class="k">#180</span> <span class="v">done</span> <span class="ok">[✓]</span></span>
+      </div>
+      <div class="term-line"><span class="p">orca@hermes:~$</span> <span class="term-cursor">▌</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // mic + phase cycling
+  const mic = document.getElementById('micB');
+  const vps = document.querySelectorAll('.vp-row .vp');
+  let ph = 0;
+  const names = ['Escuchando','Transcribiendo','Hablando'];
+  const chip = document.querySelector('.ch-ath .chip');
+  function setPh(i){
+    ph=i;
+    vps.forEach((el,idx)=>{el.classList.toggle('on',idx===i);el.classList.toggle('off',idx<i);});
+    mexUpdate(i);
+  }
+  function mexUpdate(i){
+    mic.classList.remove('listen','speak');
+    if(i===0){mic.classList.add('listen');}
+    if(i===2){mic.classList.add('speak');}
+    chip.textContent=''; chip.appendChild(document.createTextNode(names[i]));
+    const d=document.createElement('span');d.className='d';chip.prepend(d);
+  }
+  mic.addEventListener('click',()=>setPh((ph+1)%3));
+  setPh(0);
+
+  // sessions active
+  document.querySelectorAll('.sess').forEach(s=>s.addEventListener('click',()=>{document.querySelectorAll('.sess').forEach(x=>x.classList.remove('active'));s.classList.add('active');}));
+  // agent pills
+  document.querySelectorAll('.a-p').forEach(p=>p.addEventListener('click',()=>{document.querySelectorAll('.a-p').forEach(x=>x.classList.remove('on'));p.classList.add('on');}));
+  // rail
+  document.querySelectorAll('.r-btn:not(.r-pill)').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.r-btn:not(.r-pill)').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));
+  // delegation collapse
+  document.querySelectorAll('.deleg-head').forEach(h=>h.addEventListener('click',()=>h.closest('.deleg').classList.toggle('open')));
+</script>
+</body>
+</html>
