@@ -446,6 +446,7 @@
 </div>
 
 <script src="lib/vad.js"></script>
+<script src="lib/parcial.js"></script>
 <script>
 /* ===== Hermes Voice UI — fiel al kit v5.3 (app/root) ===== */
 const DAEMON = 'http://127.0.0.1:8471'
@@ -912,7 +913,7 @@ function connectWS(){
       else if(st==='hablando'){ listening=false; setPill('hablando'); micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararContinuo() }
       else { listening=false; micBtn.classList.remove('rec','mute'); if(!offline) setPill('conectado'); syncContinuo() }
     }
-    if(m.type==='transcripcion'){ inicioTransc(); pushTransc(m.payload.text) }
+    if(m.type==='transcripcion'){ inicioTransc(); pushTransc(m.payload.text) }  // parcial:true reemplaza la burbuja (inicioTransc es idempotente); el final la cierra en speech.frase/error
     if(m.type==='turno.recibido'){ confirmarAcuse(); return }
     if(m.type==='worker.listo'){ setHint(`agente listo`); return }
     // Latido de la delegación: sin esto la tool queda muda más de un minuto y
@@ -1077,11 +1078,11 @@ function bargeIn(){
 /* ---------- mic push-to-talk ---------- */
 let rec=null, micStream=null, hablando=false, recOpts={}, recChunks=[]
 let contRec=null, contStream=null   // grabación continua (modo contínuo)
-function pararMic(){ if(rec){try{rec.stop()}catch(e){}} if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null} rec=null }
+function pararMic(){ if(rec){try{rec.stop()}catch(e){}} if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null} if(parcialTimer){clearTimeout(parcialTimer);parcialTimer=null} rec=null }
 
 /* ---- modo continuo: segmentos WebM completos, no fragmentos ---- */
 let lastContTurno=0
-let contTimer=null, vadTimer=null
+let contTimer=null, vadTimer=null, parcialTimer=null
 let contStopping=false
 // Escucha la energía del micrófono y cierra la captura cuando hay silencio
 // sostenido. Marca en el recorder si hubo frase, para no mandar ruido al STT.
@@ -1153,10 +1154,25 @@ async function arrancarContinuo(){
         contTimer=setTimeout(()=>{contTimer=null;arrancarContinuo()},250)
       }
     }
-    recorder.start() // sin timeslice: este recorder produce un WebM autocontenido
+    recorder.start(250) // timeslice: dataavailable llena `chunks` en vivo (STT incremental); el stop concatena todo como un WebM completo
     // Se cierra por SILENCIO, no por reloj. El corte fijo a 3s partía cualquier
     // frase más larga a mitad de palabra y el STT recibía un fragmento.
     vigilarSilencio(recorder)
+    // STT incremental: mientras se graba, mandar cada ~2s el blob acumulado
+    // como parcial para que la transcripción aparezca en vivo. Feedback
+    // visual: el turno final (audio-end) manda el blob completo e intacto.
+    const lanzarParciales=()=>{
+      parcialTimer=setTimeout(async ()=>{
+        if(recorder.state!=='recording'||contRec!==recorder){parcialTimer=null;return}
+        try{
+          const msg=await construirParcial({ws,chunks,mime:opts.mimeType||'audio/webm',sessionId,agent,profile:perfil,agentSessionId,agentModel})
+          if(msg) ws.send(msg)
+        }catch(e){ /* parcial falla: silencio, el audio-end reporta el fallo real */ }
+        if(recorder.state==='recording') lanzarParciales()
+        else parcialTimer=null
+      },2000)
+    }
+    lanzarParciales()
     listening=true; micBtn.classList.add('rec'); docBody.classList.add('listening'); setPill('escuchando')
   }catch(err){ contRec=null; if(contStream){contStream.getTracks().forEach(t=>t.stop());contStream=null} addMsg('assistant','mic (continuo): '+err.message) }
 }
@@ -1170,6 +1186,7 @@ function pararContinuo(){
   contStopping=true
   if(contTimer){clearTimeout(contTimer);contTimer=null}
   if(vadTimer){clearTimeout(vadTimer);vadTimer=null}
+  if(parcialTimer){clearTimeout(parcialTimer);parcialTimer=null}
   if(contRec){try{contRec.stop()}catch(e){} contRec=null}
   if(contStream){contStream.getTracks().forEach(t=>t.stop());contStream=null}
   contStreamVigilado=null
@@ -1210,6 +1227,18 @@ micBtn.addEventListener('mousedown',async e=>{
     const done=new Promise(res=>{rec.onstop=()=>res(new Blob(recChunks,{type:recOpts.mimeType||'audio/webm'}))})
     rec.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data)}
     rec.start(250)
+    const lanzarParcialesPtt=()=>{
+      parcialTimer=setTimeout(async ()=>{
+        if(!rec||rec.state!=='recording'||!hablando){parcialTimer=null;return}
+        try{
+          const msg=await construirParcial({ws,chunks:recChunks,mime:recOpts.mimeType||'audio/webm',sessionId,agent,profile:perfil,agentSessionId,agentModel})
+          if(msg) ws.send(msg)
+        }catch(e){}
+        if(rec&&rec.state==='recording'&&hablando) lanzarParcialesPtt()
+        else parcialTimer=null
+      },2000)
+    }
+    lanzarParcialesPtt()
     const hard=setTimeout(()=>{if(hablando){hablando=false;micBtn.classList.remove('rec');pararMic()}},20000)
     const blob=await done; clearTimeout(hard)
     if(hablando){hablando=false;micBtn.classList.remove('rec')}

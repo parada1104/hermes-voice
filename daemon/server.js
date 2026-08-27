@@ -219,6 +219,7 @@ function conTimeout(promise, ms, label) {
 // Supervisor persistente: los jobs sobreviven al reinicio del daemon y los que
 // quedaron a medias se cierran como `interrupted` en vez de colgarse en la UI.
 const { DelegationManager } = require('./jobs')
+const { procesarParcial } = require('./parcial')
 const { restoNoHablado } = require('./streaming')
 const { crearLogger } = require('./log')
 const { guardaExterna } = require('./timeouts')
@@ -322,6 +323,13 @@ wss.on('connection', (ws) => {
         if (st.processing) return
         if (msg.sessionId && msg.sessionId !== st.sesion) return
         const chunk = Buffer.from(msg.data, 'base64')
+        // Transcripción incremental: el parcial es feedback visual, nunca toca
+        // el buffer del turno final. Sin sesión / turno en curso / sin cabecera
+        // se ignora (el parcial puede ser el primer audio; no exige buffer).
+        if (msg.parcial === true) {
+          await procesarParcial({ st, msg, chunk, sttOmlx, sendTo: (m) => sendTo(ws, m) })
+          return
+        }
         // Para WebM solo aceptamos archivos autocontenidos; los fragmentos sin EBML se descartan.
         if ((msg.mime || '').includes('webm') && !tieneCabeceraWebm(chunk)) return
         st.buffer.push(chunk)
