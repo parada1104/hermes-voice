@@ -1154,7 +1154,7 @@ async function arrancarContinuo(){
         contTimer=setTimeout(()=>{contTimer=null;arrancarContinuo()},250)
       }
     }
-    recorder.start() // sin timeslice: este recorder produce un WebM autocontenido
+    recorder.start(250) // timeslice: dataavailable llena `chunks` en vivo (STT incremental); el stop concatena todo como un WebM completo
     // Se cierra por SILENCIO, no por reloj. El corte fijo a 3s partía cualquier
     // frase más larga a mitad de palabra y el STT recibía un fragmento.
     vigilarSilencio(recorder)
