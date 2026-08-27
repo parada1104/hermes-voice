@@ -1,8 +1,10 @@
 # Hermes Voice — Requerimientos de producto (source of truth para UI y backend)
 
-> Derivado de BRIEF.md + IDEA.md + ARCHITECTURE.md + las iteraciones (2026-08-24).
-> Este documento define QUÉ debe ser el producto. La UI (kit en OpenPencil) y el
-> backend (daemon :8471) son las DOS caras que deben cumplir estos requisitos.
+> Este documento define QUÉ debe ser el producto: es el contrato. La UI y el
+> backend (daemon :8471) son las dos caras que deben cumplirlo.
+>
+> Acá NO va el avance. Qué está hecho y qué falta vive en git y en `openspec/`;
+> una lista de pendientes escrita en prosa se pudre y termina mintiendo.
 
 ## Visión (una frase)
 
@@ -28,7 +30,8 @@ voz attachado al chat.
 
 ### R3 · Elección de agente al delegar
 - Antes/ al delegar, el usuario indica a **qué agente** va la tarea:
-  - **Hermes** (por defecto) — API server :8642 (v1/runs)
+  - **Hermes** (por defecto) — el transporte lo elige el daemon; ver la cascada
+    de delegación en ARCHITECTURE.md
   - **Pi** (harness propio)
   - (futuro: OpenCode, Codex)
 - Es parte del brief "el conector es genérico: luego puede apuntar a otros harness".
@@ -65,14 +68,9 @@ voz attachado al chat.
 - Composer con: textarea, botón adjuntar (clip), accion rápida (bolt), mic primario.
 - Los 3 botones con iconos reales (SVG line), no cajas oscuras sin símbolo.
 
-## Estado de la implementación (backend daemon :8471)
-- Ya corre VAD → STT(oMLX) → capa conversacional → TTS(oMLX) voz robert, y
-  delegación POST /v1/runs a :8642.
-- La UI actual (app/ui/index.html) ya habla con el daemon (texto + audio + deleg).
-- Falta: multi-sesión visible (R2), selector de agente (R3), deleg colapsable
-  fiel (R4 en UI), y estados honestos del mic (R6) y escenas reales (R7).
+## Qué debe cubrir el kit de UI
 
-## Qué se pide a este kit (OpenPencil)
+> Brief para el kit de diseño, no un estado.
 - Que cada requisito R1-R8 tenga su componente(s) y su escena representada en el
   documento OpenPencil, con nombres semánticos, tokens (colores/tipografía) del
   spec 004, y estados/variant el componentes.

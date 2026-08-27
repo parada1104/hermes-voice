@@ -1,4 +1,22 @@
-# Hermes Voice — conversational voice layer for Hermes Desktop
+# Hermes Voice — original brief (HISTORICAL)
+
+> **This document is history, not the current design.** It framed the project as
+> a Hermes Desktop runtime plugin whose deliverable was a skeleton with fake
+> data: no audio, no model, no delegation. That framing is superseded — the
+> project is now a standalone Electron app with a Node daemon, real audio, a real
+> conversational model and real delegation.
+>
+> It is kept because the reasoning behind the decisions it records is still worth
+> having, and two parts of it remain load-bearing and are carried forward in
+> `ARCHITECTURE.md`: the **data model** (the voice layer owns its thread; agent
+> conversations are its delegated tasks, rendered as nested collapsible runs) and
+> the **design decisions already made** section.
+>
+> For the current design read `ARCHITECTURE.md`; for the product contract read
+> `REQUIREMENTS.md`; for the north star read `IDEA.md`.
+
+## Original framing
+
 
 ## What we are building
 
