@@ -1,0 +1,44 @@
+:root {
+  /* ---- Spacing scale (4px base) ---- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ---- Corner radii ---- */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 999px;   /* Parrotfy buttons are fully pill-shaped */
+
+  /* ---- Border widths ---- */
+  --border-width: 1.5px;   /* @kind spacing */
+
+  /* ---- Elevation / shadows (soft, coral-neutral) ---- */
+  --shadow-xs: 0 1px 2px rgba(35, 35, 35, 0.06);
+  --shadow-sm: 0 2px 8px rgba(35, 35, 35, 0.08);
+  --shadow-md: 0 8px 24px rgba(35, 35, 35, 0.10);
+  --shadow-lg: 0 16px 48px rgba(35, 35, 35, 0.14);
+  --shadow-coral: 0 8px 24px rgba(255, 118, 118, 0.35);
+  --shadow-blue:  0 8px 24px rgba(39, 67, 177, 0.28);
+
+  /* ---- Motion ---- */
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --ease-in-out:cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+  --dur-fast:   120ms; /* @kind other */
+  --dur-base:   200ms; /* @kind other */
+  --dur-slow:   360ms; /* @kind other */
+
+  /* ---- Layout ---- */
+  --container-max: 1200px; /* @kind spacing */
+}

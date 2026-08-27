@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Voice — codex-lite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .top-label{font-family:var(--mono);font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;}
+  .attach-wrap{position:relative;}
+  .drop-up{position:absolute;bottom:calc(100% + 8px);left:0;display:flex;flex-direction:column;gap:2px;min-width:190px;background:#16181d;border:1px solid #262b33;border-radius:10px;padding:5px;box-shadow:0 16px 36px -10px rgba(0,0,0,.7);opacity:0;pointer-events:none;transform:translateY(6px);transition:all .16s cubic-bezier(.2,.8,.2,1);z-index:60;}
+  .drop-up.open{opacity:1;pointer-events:auto;transform:none;}
+  .drop-up button{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;border:0;background:transparent;color:#c3cad5;font:500 12.5px/1 var(--font);cursor:pointer;text-align:left;transition:background .12s;}
+  .drop-up button:hover{background:#20242c;color:#f2f4f7;}
+  .ses-tag{font-family:var(--mono);font-size:10.5px;color:var(--tx3);letter-spacing:.02em;white-space:nowrap;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#0b0d10;cursor:default;} 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0b0c0e; --s1:#14161a; --s2:#1b1e24; --line:#23272e;
+    --hd:#0e1013; --tx:#f2f4f7; --tx2:#9aa1ad; --tx3:#5f6672; --tx4:#4d535d;
+    --accent:#d97a3f; --ok:#2fbf8f; --tools:#6aa6e8; --err:#e5534b;
+    --font:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    --t:140ms cubic-bezier(.2,.8,.2,1);
+  }
+  html,body{height:100%;}
+  body{font-family:var(--font);background:var(--bg);color:var(--tx);
+    height:100vh;overflow:hidden;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;
+    stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .app{display:flex;flex-direction:column;height:100vh;}
+
+  /* ===== HEADER 58px ===== */
+  .header{display:flex;align-items:center;gap:12px;height:58px;padding:0 16px;
+    flex:0 0 58px;background:var(--hd);border-bottom:1px solid var(--line);z-index:20;}
+  .toggle{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    border:1px solid transparent;background:transparent;color:var(--tx3);cursor:pointer;transition:all var(--t);}
+  .toggle:hover{background:var(--s2);color:var(--tx);}
+  .logo{display:flex;align-items:center;gap:10px;user-select:none;flex:none;}
+  .logo-mark{width:26px;height:26px;border-radius:8px;flex:none;background:var(--accent);
+    display:grid;place-items:center;box-shadow:0 2px 10px -2px rgba(217,122,63,.6);}
+  .logo-mark svg{stroke:none;fill:#0b0c0e;}
+  .logo-name{font-weight:600;font-size:14px;letter-spacing:-.005em;line-height:1;}
+  .logo-sub{font-family:var(--mono);font-size:12px;color:var(--tx3);line-height:1;margin-left:6px;}
+  .h-space{flex:1;}
+  .pill{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;border-radius:999px;
+    border:1px solid var(--line);background:var(--s1);font-family:var(--mono);font-size:12px;font-weight:500;color:var(--tx2);}
+  .pill .d{width:7px;height:7px;border-radius:999px;background:var(--tx4);}
+  .pill.ok{border-color:rgba(47,191,143,.35);background:rgba(47,191,143,.07);color:var(--ok);}
+  .pill.ok .d{background:var(--ok);}
+  .pill.listen{border-color:rgba(217,122,63,.4);background:rgba(217,122,63,.07);color:var(--accent);}
+  .pill.listen .d{background:var(--accent);animation:glow 2s ease-in-out infinite;}
+  .pill.off{border-color:rgba(229,83,75,.4);background:rgba(229,83,75,.07);color:var(--err);}
+  .pill.off .d{background:var(--err);}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(217,122,63,.34),0 0 18px 0 rgba(217,122,63,.28)}50%{box-shadow:0 0 0 7px rgba(217,122,63,0),0 0 26px 2px rgba(217,122,63,.42)}}
+
+  /* ===== BODY ===== */
+  .body{flex:1;display:flex;min-height:0;}
+
+  /* ===== SIDEBAR 270 ===== */
+  .sidebar{width:270px;flex:0 0 270px;display:flex;flex-direction:column;min-height:0;
+    background:var(--hd);border-right:1px solid var(--line);
+    transition:width .22s cubic-bezier(.2,.8,.2,1);overflow:hidden;}
+  .app.collapsed .sidebar{width:0;border-right:none;}
+  .sb-inner{width:270px;flex:0 0 270px;display:flex;flex-direction:column;min-height:0;padding:14px 12px;gap:6px;}
+  .sb-head{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 8px;}
+  .sb-head .t{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--tx3);}
+  .sb-plus{width:22px;height:22px;display:grid;place-items:center;border-radius:6px;
+    border:1px solid var(--line);background:var(--s1);color:var(--tx2);cursor:pointer;transition:all var(--t);}
+  .sb-plus:hover{color:var(--accent);border-color:#3a3129;background:var(--s2);}
+  .sb-item{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:10px;cursor:pointer;
+    border:1px solid transparent;transition:background var(--t),border-color var(--t);}
+  .sb-item:hover{background:var(--s2);}
+  .sb-item.active{background:var(--s2);border-color:#2a2f37;box-shadow:inset 2px 0 0 var(--accent);}
+  .sb-item .dot{width:7px;height:7px;flex:0 0 auto;border-radius:999px;background:var(--tx4);}
+  .sb-item .dot.live{background:var(--accent);box-shadow:0 0 0 3px rgba(217,122,63,.16);}
+  .sb-item .dot.speak{background:var(--ok);box-shadow:0 0 0 3px rgba(47,191,143,.14);}
+  .sb-item .agent-icon{width:22px;height:22px;display:grid;place-items:center;flex:none;border-radius:7px;background:#101215;border:1px solid var(--line);font-family:var(--mono);font-size:11px;font-weight:600;color:var(--tx3);}
+  .sb-item.active .agent-icon{color:var(--accent);border-color:rgba(217,122,63,.35);background:rgba(217,122,63,.08);}
+  .sb-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500;color:var(--tx2);}
+  .sb-item.active .nm{color:var(--tx);}
+  .sb-item .bdg{flex:0 0 auto;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.04em;
+    padding:4px 7px;border-radius:5px;color:var(--tx4);background:rgba(107,114,128,.12);}
+  .sb-item.active .bdg{color:var(--accent);background:rgba(217,122,63,.12);}
+  .sb-item.speak .bdg{color:var(--ok);background:rgba(47,191,143,.12);}
+  .sb-item .sb-del{flex:0 0 auto;width:18px;height:18px;display:grid;place-items:center;border-radius:5px;
+    border:0;background:transparent;color:var(--tx4);font-size:10px;cursor:pointer;opacity:0;transition:opacity .12s,color .12s,background .12s;}
+  .sb-item:hover .sb-del{opacity:1;}
+  .sb-del:hover{color:var(--err);background:rgba(229,83,75,.12);}
+  .sb-more{flex:0 0 auto;width:22px;height:22px;border:0;background:transparent;color:var(--tx4);border-radius:5px;cursor:pointer;font-size:16px;line-height:1;opacity:0;}
+  .sb-item:hover .sb-more,.sb-more:focus{opacity:1;}
+  .sb-more:hover{color:var(--tx);background:var(--s3);}
+  .session-menu{position:fixed;z-index:80;width:270px;padding:10px;background:#171a20;border:1px solid #303641;border-radius:10px;box-shadow:0 18px 45px rgba(0,0,0,.45);}
+  .session-menu[hidden]{display:none;}
+  .session-menu .meta{padding:3px 6px 9px;color:var(--tx3);font:11px var(--mono);line-height:1.55;overflow-wrap:anywhere;}
+  .session-menu .meta b{color:var(--tx2);font-weight:500;}
+  .session-menu button{width:100%;height:29px;border:0;border-radius:6px;background:transparent;color:var(--tx2);text-align:left;padding:0 7px;font:12px var(--font);cursor:pointer;}
+  .session-menu button:hover{background:var(--s2);color:var(--tx);}
+  .path-row{display:none;}
+  .path-row.show{display:block;}
+  .path-picker{display:flex;gap:7px;}
+  .path-picker input{flex:1;min-width:0;}
+  .path-picker button{height:36px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:#20242b;color:var(--tx2);cursor:pointer;font:500 12px var(--font);}
+  .sb-new{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;
+    border:1px dashed #2a2f37;background:transparent;color:var(--tx3);font-size:12.5px;font-weight:500;
+    text-align:left;cursor:pointer;transition:all .16s ease-out;}
+  .sb-new:hover{border-color:var(--accent);color:var(--tx);background:var(--s1);}
+  .sb-space{flex:1;}
+  .sb-daemon{display:flex;align-items:center;gap:9px;padding:10px;border-radius:10px;
+    background:#101215;border:1px solid var(--line);}
+  .sb-daemon .d{width:6px;height:6px;border-radius:999px;background:var(--ok);}
+  .sb-daemon.off .d{background:var(--err);}
+  .sb-daemon .txt{font-family:var(--mono);font-size:11.5px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ===== CHAT ===== */
+  .chat-col{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;}
+  .chat-scroll{flex:1;overflow-y:auto;padding:26px 34px 20px;}
+  .chat-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
+  .divider{display:flex;align-items:center;gap:12px;padding:2px 0 6px;}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#1e2127);}
+  .divider::after{background:linear-gradient(90deg,#1e2127,transparent);}
+  .divider span{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:#4d535d;}
+  .history-label{align-self:center;margin:-4px 0 2px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;color:var(--tx4);font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;}
+
+  .msg{display:flex;gap:11px;align-items:flex-start;animation:rise .24s ease-out;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .msg.me{flex-direction:row-reverse;}
+  .msg .av{width:26px;height:26px;flex:0 0 auto;margin-top:2px;border-radius:8px;background:var(--s2);
+    border:1px solid #262b33;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--tx2);}
+  .msg.me .av{background:#3a3f4b;border-color:#454b57;}
+  .msg .col{display:flex;flex-direction:column;gap:6px;max-width:82%;}
+  .msg.me .col{align-items:flex-end;}
+  .msg .bubble{padding:12px 15px;border-radius:14px 14px 14px 5px;background:var(--s1);
+    border:1px solid #1e2127;font-size:14px;line-height:1.6;color:#dfe3e9;text-wrap:pretty;
+    transition:border-color .16s ease-out;}
+  .msg.me .bubble{border-radius:14px 14px 5px 14px;background:#17130f;border:1px solid #3a2b1e;color:#f0e6dd;}
+  .msg.transc .bubble{border-style:dashed;border-color:#6b4a2e;background:rgba(217,122,63,.05);
+    font-style:italic;color:var(--tx2);}
+  .msg.transc .bubble::after{content:'▍';color:var(--accent);margin-left:2px;font-style:normal;animation:caret 1s steps(1) infinite;}
+  @keyframes caret{0%,45%{opacity:1}50%,95%{opacity:0}100%{opacity:1}}
+  .wave{display:flex;align-items:flex-end;gap:2px;height:12px;padding-left:4px;}
+  .wave i{width:2px;border-radius:2px;background:var(--ok);animation:wv .9s ease-in-out infinite;}
+  .wave i:nth-child(2){animation-delay:.12s}.wave i:nth-child(3){animation-delay:.24s}.wave i:nth-child(4){animation-delay:.36s}
+  @keyframes wv{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  .talk{display:flex;align-items:center;gap:8px;padding-left:4px;}
+  .talk .lbl{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--ok);}
+
+  /* ===== TOOL CALL ===== */
+  .tool{display:flex;flex-direction:column;border-radius:12px;border:1px solid #223142;background:#101216;
+    overflow:hidden;transition:border-color .16s ease-out;animation:rise .24s ease-out;}
+  .tool:hover{border-color:#2c3d55;}
+  .tool .trow{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;}
+  .tool .spin{width:14px;height:14px;flex:0 0 auto;border-radius:999px;border:1.75px solid #23303f;
+    border-top-color:var(--tools);animation:sp .8s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .tool .check{width:14px;height:14px;flex:0 0 auto;color:var(--tools);display:grid;place-items:center;}
+  .tool .x{width:14px;height:14px;flex:0 0 auto;color:var(--err);display:grid;place-items:center;}
+  .tool .lbl{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--tools);}
+  .tool .chip{font-family:var(--mono);font-size:12px;font-weight:600;padding:4px 8px;border-radius:5px;
+    background:rgba(106,166,232,.1);color:#9cc4ef;}
+  .tool .req{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-family:var(--mono);font-size:12.5px;color:#7c8492;}
+  .tool .ms{font-family:var(--mono);font-size:11px;color:var(--tx4);}
+  .tool .caret{color:var(--tx3);display:grid;place-items:center;transform:rotate(0);transition:transform .2s cubic-bezier(.2,.8,.2,1);}
+  .tool.open .caret{transform:rotate(180deg);}
+  .tool .tbody{display:none;border-top:1px solid #1a222c;padding:13px;background:#0d0f13;
+    flex-direction:column;gap:12px;}
+  .tool.open .tbody{display:flex;}
+  .tool .k{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#4d535d;}
+  .tool .pv{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#a8b0bd;white-space:pre-wrap;}
+  .tool .rv{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#c3cad5;white-space:pre-wrap;
+    padding:11px 12px;border-radius:9px;background:#0b0d10;border:1px solid #1a1e24;border-left:2px solid var(--tools);}
+  .tool.err{border-color:#3a2422;}
+  .tool.err .lbl{color:var(--err);}
+  .tool.err .chip{background:rgba(229,83,75,.1);color:#f0a9a4;}
+  .tool .bar{height:2px;background:#1a222c;overflow:hidden;}
+  .tool .bar i{display:block;height:2px;width:34%;background:linear-gradient(90deg,transparent,var(--tools),transparent);
+    animation:sheen 1.4s linear infinite;}
+  @keyframes sheen{0%{transform:translateX(-100%)}100%{transform:translateX(240%)}}
+
+  /* ===== DAEMON BANNER ===== */
+  .banner{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;
+    border:1px solid #4a2624;background:linear-gradient(180deg,#1c1315,#171113);animation:rise .22s ease-out;}
+  .banner .icn{width:26px;height:26px;flex:0 0 auto;display:grid;place-items:center;border-radius:8px;
+    background:rgba(229,83,75,.14);color:var(--err);}
+  .banner .bt{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .banner .bt .t{font-weight:600;font-size:13px;color:#f0c4c1;}
+  .banner .bt .d{font-family:var(--mono);font-size:12px;color:#8f7a78;}
+  .banner .btn{padding:8px 14px;border-radius:999px;border:1px solid #6b3733;background:rgba(229,83,75,.12);
+    color:#f0a9a4;font-weight:600;font-size:12px;cursor:pointer;transition:all var(--t);}
+  .banner .btn:hover{background:rgba(229,83,75,.2);color:#fff;}
+
+  /* ===== EMPTY ===== */
+  .empty{display:flex;flex-direction:column;align-items:center;gap:16px;padding:76px 0 40px;animation:rise .26s ease-out;}
+  .empty .mark{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--s1);
+    display:grid;place-items:center;}
+  .empty .mark svg{stroke:none;fill:#3a3f48;}
+  .empty .tt{font-size:15px;font-weight:600;color:#c8ccd4;}
+  .empty .ss{font-size:13px;color:#6b7280;text-align:center;max-width:40ch;line-height:1.5;}
+  .empty .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px;}
+  .empty .chip{padding:9px 13px;border-radius:999px;border:1px solid var(--line);background:#101215;
+    color:var(--tx2);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s ease-out;}
+  .empty .chip:hover{border-color:#3a3129;color:var(--tx);background:#16181c;}
+
+  /* ===== COMPOSER ===== */
+  .composer-wrap{padding:0 34px 22px;}
+  .composer{max-width:720px;margin:0 auto;border-radius:14px;border:1px solid var(--line);
+    background:#101215;transition:border-color .18s ease-out,box-shadow .18s ease-out;}
+  .composer:focus-within{border-color:rgba(217,122,63,.35);}
+  .composer textarea{display:block;width:100%;box-sizing:border-box;resize:none;border:0;outline:0;
+    background:transparent;padding:14px 15px 6px;font:400 14px/1.6 var(--font);color:#e6e8ec;}
+  .composer textarea::placeholder{color:var(--tx4);}
+  .crow{display:flex;align-items:center;gap:6px;padding:7px 8px 9px 10px;}
+  .model-select{height:28px;max-width:150px;border:1px solid var(--line);border-radius:7px;background:#0b0d10;color:var(--tx2);font-family:var(--mono);font-size:10px;padding:0 6px;outline:none;}
+  .model-select:disabled{opacity:.55;cursor:not-allowed;}
+  .agent-sel{display:flex;gap:4px;padding:3px;border-radius:999px;background:#0b0d10;border:1px solid var(--line);}
+  .agent-sel button{padding:6px 11px;border-radius:999px;border:0;font-family:var(--mono);font-size:12px;
+    font-weight:500;background:transparent;color:#6b7280;cursor:pointer;transition:all .15s ease-out;}
+  .agent-sel button.on{background:var(--accent);color:#14100c;}
+  .c-sp{flex:1;}
+  .c-btn{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;border:1px solid transparent;
+    background:transparent;color:var(--tx3);cursor:pointer;transition:all var(--t);}
+  .c-btn:hover{color:var(--tx);background:#17191e;}
+  .mic-btn{width:34px;height:34px;display:grid;place-items:center;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line);background:#17191e;color:var(--tx2);transition:all .16s ease-out;}
+  .mic-btn.rec{border-color:var(--accent);background:rgba(217,122,63,.16);color:#f0a672;animation:glow 2s ease-in-out infinite;}
+  .mic-btn.mute{border-color:var(--s2);background:#101215;color:var(--tx4);}
+  .mic-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.75;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .hints{max-width:720px;margin:8px auto 0;display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:11px;color:var(--tx4);}
+
+  /* modo de voz */
+  .mode-sel{display:flex;gap:2px;padding:2px;border-radius:999px;background:#0b0d10;border:1px solid var(--line);}
+  .mode-sel .m-btn{padding:5px 10px;border-radius:999px;border:0;font-family:var(--mono);font-size:11px;
+    font-weight:500;background:transparent;color:#6b7280;cursor:pointer;transition:all .15s ease-out;}
+  .mode-sel .m-btn.on{background:var(--accent);color:#14100c;}
+  .c-btn.mics.active{color:var(--ok);border-color:rgba(47,191,143,.4);background:rgba(47,191,143,.08);}
+  .c-btn.mics.off{color:var(--tx4);border-color:var(--line);}
+  .c-btn.mute.active{color:var(--tx);border-color:var(--border2);background:var(--surface2);}
+  .c-btn.mute.off{color:var(--tx4);border-color:var(--line);}
+
+  /* infra en sidebar */
+  .sb-infra{display:flex;flex-direction:column;gap:3px;padding:9px 10px;border-radius:10px;
+    background:#101215;border:1px solid var(--line);}
+  .inf-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;color:#6b7280;}
+  .inf-row .d{width:6px;height:6px;border-radius:999px;background:var(--tx4);flex:none;}
+  .inf-row .d.ok{background:var(--ok);}
+  .inf-row .d.bad{background:var(--err);}
+  .inf-row .v{margin-left:auto;color:var(--tx4);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inf-row .v[data-tip]::after{right:0;left:auto;}
+  .inf-row .v.ok{color:var(--ok);}
+  .inf-row .v.bad{color:var(--err);}
+
+  /* selector de modelo agrupado con los controles de voz */
+  .voice-group{display:flex;align-items:center;gap:8px;}
+  .voice-group .model-select{max-width:170px;}
+
+  /* modal de contexto del agente */
+  .context-modal{width:min(760px,92vw);max-height:88vh;display:flex;flex-direction:column;gap:10px;
+    background:#12151a;border:1px solid #262b33;border-radius:14px;padding:18px 20px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.75);}
+  .context-modal header{display:flex;align-items:center;gap:10px;}
+  .context-modal h2{margin:0;font:600 14px/1.2 var(--sans,inherit);color:var(--tx2);flex:1;}
+  .ctx-close{background:none;border:0;color:var(--tx4);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:6px;}
+  .ctx-close:hover{background:#1b1e24;color:var(--tx2);}
+  .ctx-hint{margin:0;color:var(--tx4);font:400 11px/1.5 var(--mono);}
+  .ctx-hint code{color:var(--tx2);}
+  .ctx-grid{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font:400 11px/1.5 var(--mono);}
+  .ctx-grid b{color:var(--tx4);font-weight:400;}
+  .ctx-grid span{color:var(--tx2);overflow-wrap:anywhere;}
+  .context-modal label{color:var(--tx4);font:400 11px/1.4 var(--mono);display:flex;gap:8px;align-items:baseline;}
+  .ctx-path{color:var(--tx4);opacity:.7;font-size:10px;word-break:break-all;}
+  #contextSoul{flex:1;min-height:220px;resize:vertical;background:#0b0d10;border:1px solid #262b33;border-radius:9px;
+    color:var(--tx2);font:400 12px/1.6 var(--mono);padding:10px 12px;outline:none;}
+  #contextSoul:focus{border-color:#3a424e;}
+  .ctx-skills{display:flex;flex-wrap:wrap;gap:4px;max-height:64px;overflow-y:auto;}
+  .ctx-skills span{background:#1b1e24;border:1px solid #262b33;border-radius:5px;padding:1px 6px;
+    color:var(--tx4);font:400 10px/1.6 var(--mono);}
+  .context-modal footer{display:flex;align-items:center;gap:8px;}
+  .ctx-msg{flex:1;color:var(--tx4);font:400 11px/1.4 var(--mono);}
+  .ctx-msg.ok{color:var(--ok);} .ctx-msg.bad{color:var(--err);}
+  .ctx-secondary,.ctx-primary{border-radius:8px;padding:6px 14px;font:400 11px/1.4 var(--mono);cursor:pointer;}
+  .ctx-secondary{background:#1b1e24;border:1px solid #262b33;color:var(--tx2);}
+  .ctx-primary{background:#2c333d;border:1px solid #3a424e;color:#e6ebf2;}
+  .ctx-primary:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* mensaje que el daemon nunca acusó */
+  .msg.no-enviado{opacity:.55;}
+  .msg.no-enviado .bubble{border:1px dashed var(--err);}
+
+  /* el mic distingue "escuchando" de "oyendo tu voz" */
+  .mic-btn.voz{box-shadow:0 0 0 3px rgba(88,200,120,.35);}
+
+  /* tooltip */
+  [data-tip]{position:relative;}
+  /* El tooltip envuelve en vez de truncarse y se mantiene mientras el puntero
+     siga sobre el control (el ::before hace de puente sobre el hueco). */
+  [data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);right:0;
+    background:#1b1e24;border:1px solid #303743;color:#dbe2ec;font:400 11px/1.5 var(--mono);
+    padding:7px 10px;border-radius:8px;white-space:normal;width:max-content;max-width:min(280px,60vw);
+    text-align:left;z-index:60;box-shadow:0 14px 28px -10px rgba(0,0,0,.7);
+    opacity:0;visibility:hidden;transform:translateY(3px);transition:opacity .12s ease,transform .12s ease,visibility .12s;}
+  [data-tip]::before{content:'';position:absolute;bottom:100%;right:0;left:0;height:9px;z-index:59;
+    opacity:0;visibility:hidden;transition:visibility .12s;}
+  [data-tip]:hover::after,[data-tip]:focus-visible::after,[data-tip]:hover::before,[data-tip]:focus-visible::before{
+    opacity:1;visibility:visible;transform:translateY(0);transition-delay:.25s;}
+
+  /* drop-up adjuntar */
+  .attach-wrap{position:relative;}
+  .drop-up{position:absolute;bottom:calc(100% + 8px);left:0;display:flex;flex-direction:column;gap:2px;
+    min-width:190px;background:#16181d;border:1px solid #262b33;border-radius:10px;padding:5px;
+    box-shadow:0 16px 36px -10px rgba(0,0,0,.7);opacity:0;pointer-events:none;transform:translateY(6px);
+    transition:all .16s cubic-bezier(.2,.8,.2,1);z-index:60;}
+  .drop-up.open{opacity:1;pointer-events:auto;transform:none;}
+  .drop-up button{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;border:0;
+    background:transparent;color:#c3cad5;font:500 12.5px/1 var(--font);cursor:pointer;text-align:left;transition:background .12s;}
+  .drop-up button:hover{background:#20242c;color:#f2f4f7;}
+
+  /* etiqueta de sesión/agente en composer */
+  .ses-tag{font-family:var(--mono);font-size:10.5px;color:var(--tx3);letter-spacing:.02em;white-space:nowrap;
+    padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#0b0d10;cursor:default;}
+  .switch-btn{height:32px;display:flex;align-items:center;gap:7px;padding:0 9px;border:1px solid var(--line);border-radius:999px;background:#0b0d10;color:var(--tx3);font:500 10px var(--mono);cursor:pointer;}
+  .switch-btn.on{color:var(--accent);border-color:rgba(217,122,63,.5);}
+  .switch-track{width:25px;height:14px;border-radius:10px;background:#30343d;padding:2px;transition:background .15s;}
+  .switch-track i{display:block;width:10px;height:10px;border-radius:50%;background:#8a919d;transition:transform .15s,background .15s;}
+  .switch-btn.on .switch-track{background:var(--accent);}
+  .switch-btn.on .switch-track i{transform:translateX(11px);background:#17110d;}
+  .modal-backdrop{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,7,10,.72);backdrop-filter:blur(5px);z-index:100;}
+  .modal-backdrop[hidden]{display:none;}
+  .session-modal{width:min(390px,calc(100vw - 32px));background:#171a20;border:1px solid #303641;border-radius:14px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.55);}
+  .session-modal h2{font-size:16px;font-weight:600;color:var(--tx1);margin-bottom:16px;}
+  .session-modal label{display:block;color:var(--tx3);font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px;}
+  .session-modal input,.session-modal select{width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#0d0f13;color:var(--tx1);font:400 13px var(--font);outline:none;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+  .modal-actions button{height:34px;padding:0 13px;border-radius:8px;border:1px solid var(--line);background:#20242b;color:var(--tx2);cursor:pointer;font:500 12px var(--font);}
+  .modal-actions .primary{background:var(--accent);border-color:var(--accent);color:#18110b;}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <button class="toggle" id="toggle" data-tip="Colapsar el panel de sesiones" aria-label="Sidebar">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+    </button>
+    <div class="logo">
+      <div class="logo-mark"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2.2 14.1 9.9 21.8 12 14.1 14.1 12 21.8 9.9 14.1 2.2 12 9.9 9.9Z"/></svg></div>
+      <span class="logo-name">Hermes Voice</span><span class="logo-sub">codex-lite</span>
+    </div>
+    <div class="h-space"></div>
+    <div class="pill ok" id="pill"><span class="d"></span><span id="pillText">conectado</span></div> 
+  </div>
+
+  <div class="body">
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-inner">
+        <div class="sb-head"><span class="t">SESIONES</span><button class="sb-plus" id="sbPlus" data-tip="Crear una sesión nueva">+</button></div>
+        <div id="sbList"></div>
+        <button class="sb-new" id="sbNew">+&nbsp; Nueva sesión</button>
+        <div class="sb-space"></div>
+        <div class="sb-infra" id="sbInfra">
+          <div class="inf-row" data-tip="Modelo STT local"><span class="d" id="infStt"></span><span>stt</span><span class="v" id="infSttV">…</span></div>
+          <div class="inf-row" data-tip="Modelo TTS local"><span class="d" id="infTts"></span><span>tts</span><span class="v" id="infTtsV">…</span></div>
+          <div class="inf-row" data-tip="Orca = lanzador de workers"><span class="d" id="infOrca"></span><span>orca</span><span class="v" id="infOrcaV">…</span></div>
+          <div class="inf-row" data-tip="Perfiles de Hermes disponibles"><span class="d" id="infHermes"></span><span>hermes</span><span class="v" id="infHermesV">…</span></div>
+        </div>
+        <div class="sb-daemon" id="sbDaemon"><span class="d"></span><span class="txt">daemon · realtime WS</span></div>
+      </div>
+    </aside>
+
+    <div class="chat-col">
+      <div class="chat-scroll" id="chatScroll">
+        <div class="chat-inner" id="chatInner"></div>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer" id="composer">
+          <textarea rows="2" id="composerText" placeholder="Escribe a Hermes, o usa el mic…"></textarea>
+                    <div class="crow">
+                      <div class="attach-wrap">
+                        <button class="c-btn" id="attachBtn" aria-label="Adjuntar" data-tip="Adjuntar archivo, portapapeles o captura de pantalla">
+                          <svg class="ic" viewBox="0 0 24 24"><path d="M14.5 6.5 8 13a2.8 2.8 0 0 0 4 4l7-7a5 5 0 0 0-7-7l-7.5 7.5a7 7 0 0 0 10 10l3-3"/></svg>
+                        </button>
+                        <div class="drop-up" id="dropUp">
+                          <button data-act="file">📄 Subir archivo…</button>
+                          <button data-act="clipboard">📋 Pegar portapapeles</button>
+                          <button data-act="capture">🖥️ Captura de pantalla</button>
+                        </div>
+                      </div>
+                      <div class="c-sp"></div>
+                      <div class="voice-group" aria-label="Voz y modelo de delegación">
+                        <select class="model-select" id="delegationModel" aria-label="Modelo usado al delegar a Hermes" data-tip="Modelo del AGENTE delegado. No es el de la capa conversacional que te responde."></select>
+                        <button class="switch-btn" id="modeToggle" aria-label="Cambiar modo de voz" data-tip="Alterna entre push-to-talk y escucha continua">
+                          <span class="mode-label" id="modeLabel">PTT</span><span class="switch-track"><i></i></span>
+                        </button>
+                        <button class="switch-btn" id="ttsToggle" aria-label="Toggle TTS" data-tip="Activa o silencia la respuesta hablada">
+                          <svg class="ic" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
+                          <span class="switch-track"><i></i></span>
+                        </button>
+                        <button class="mic-btn" id="micBtn" aria-label="Microfono" data-tip="Push to talk — mantené Alt+Space o hacé clic">
+                          <svg viewBox="0 0 24 24"><rect x="9" y="2.6" width="6" height="10.2" rx="3"/><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.6V21"/><path d="M8.6 21h6.8"/></svg>
+                        </button>
+                      </div>
+                    </div>
+        </div>
+        <div class="hints"><span id="hintL"></span><span id="hintR"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="sessionModal" hidden>
+  <form class="session-modal" id="sessionForm">
+    <h2>Nueva sesión</h2>
+    <label for="newSessionId">Nombre de la conversación</label>
+    <input id="newSessionId" required maxlength="80" placeholder="ej. Coach Pokémon" autocomplete="off">
+    <label for="newAgent">Agente</label>
+    <select id="newAgent"><option value="hermes">Hermes</option><option value="pi">Pi</option></select>
+    <label for="newProfile">Perfil Hermes</label>
+    <select id="newProfile"></select>
+    <label for="agentSession">Sesión Hermes existente <span class="optional">(opcional)</span></label>
+    <select id="agentSession"><option value="">Crear sesión nueva</option></select>
+    <div class="path-row" id="piPathRow"><label for="piWorkingDir">Ruta de trabajo de Pi</label><div class="path-picker"><input id="piWorkingDir" placeholder="Selecciona una carpeta" readonly><button type="button" id="pickPiPath">Elegir</button></div></div>
+    <div class="modal-actions"><button type="button" id="sessionCancel">Cancelar</button><button class="primary" type="submit">Crear sesión</button></div>
+  </form>
+</div>
+<div class="session-menu" id="sessionMenu" hidden><div class="meta" id="sessionMenuMeta"></div><button type="button" id="renameSession">Renombrar…</button><button type="button" id="openContext">Ver / editar contexto…</button><button type="button" id="copyLocalId">Copiar ID local</button><button type="button" id="copyRemoteId">Copiar ID Hermes</button><button type="button" id="reloadContext">Recargar contexto</button></div>
+
+<div class="modal-backdrop" id="contextModal" hidden>
+  <div class="context-modal">
+    <header>
+      <h2>Contexto del agente</h2>
+      <button type="button" class="ctx-close" id="contextClose" aria-label="Cerrar">✕</button>
+    </header>
+    <p class="ctx-hint">Esto es lo que se le inyecta al agente antes de hablar: su <code>SOUL.md</code>, sus skills y su ruta de trabajo. No es el historial de la conversación.</p>
+    <div class="ctx-grid" id="contextMeta"></div>
+    <label for="contextSoul">SOUL.md <span class="ctx-path" id="contextPath"></span></label>
+    <textarea id="contextSoul" spellcheck="false" placeholder="El perfil no tiene SOUL.md todavía."></textarea>
+    <div class="ctx-skills" id="contextSkills"></div>
+    <footer>
+      <span class="ctx-msg" id="contextMsg"></span>
+      <button type="button" class="ctx-secondary" id="contextReload">Recargar</button>
+      <button type="button" class="ctx-primary" id="contextSave">Guardar</button>
+    </footer>
+  </div>
+</div>
+
+<script src="lib/vad.js"></script>
+<script>
+/* ===== Hermes Voice UI — fiel al kit v5.3 (app/root) ===== */
+const DAEMON = 'http://127.0.0.1:8471'
+const WS_URL = 'ws://127.0.0.1:8471/ws'
+const $ = s => document.querySelector(s)
+const app=$('#app'), docBody=document.body, toggle=$('#toggle'), pill=$('#pill'), pillText=$('#pillText')
+const sidebar=$('#sidebar'), sbList=$('#sbList'), sbPlus=$('#sbPlus'), sbNew=$('#sbNew'), sbDaemon=$('#sbDaemon')
+const sessionModal=$('#sessionModal'), sessionForm=$('#sessionForm'), sessionCancel=$('#sessionCancel'), newSessionId=$('#newSessionId'), newAgent=$('#newAgent'), newProfile=$('#newProfile'), agentSession=$('#agentSession'), piPathRow=$('#piPathRow'), piWorkingDir=$('#piWorkingDir'), pickPiPath=$('#pickPiPath')
+const sessionMenu=$('#sessionMenu'), sessionMenuMeta=$('#sessionMenuMeta'), copyLocalId=$('#copyLocalId'), copyRemoteId=$('#copyRemoteId'), reloadContext=$('#reloadContext')
+const chatScroll=$('#chatScroll'), chatInner=$('#chatInner')
+const composerText=$('#composerText'), micBtn=$('#micBtn')
+const delegationModel=$('#delegationModel')
+let capaConversacional=null
+const contextModal=$('#contextModal'), contextMeta=$('#contextMeta'), contextSoul=$('#contextSoul'), contextPath=$('#contextPath')
+const contextSkills=$('#contextSkills'), contextMsg=$('#contextMsg'), contextSave=$('#contextSave'), contextReload=$('#contextReload')
+const contextClose=$('#contextClose'), openContext=$('#openContext'), renameSession=$('#renameSession')
+let contextPerfil='' 
+const hintL=$('#hintL'), hintR=$('#hintR')
+let hintTimer=null
+function setHint(texto,ms=2500){ if(!hintR)return; const previo=hintR.textContent; hintR.textContent=texto
+  clearTimeout(hintTimer); hintTimer=setTimeout(()=>{ hintR.textContent=previo },ms) }
+
+let sessionId='default', agent='hermes', trash=null
+let offline=false, listening=false
+let modo='ptt'   // 'ptt'=push-to-talk (default) | 'cont'=continuo
+let micEncendido=true
+let ttsOn=true
+let perfil=''
+let agentSessionId=''
+let agentModel='', agentProvider=''
+let chatLoadToken=0
+let salaActiva='default'
+
+// El agente/perfil se fija al crear la sesión; arriba solo se muestra la configuración activa.
+function syncAgentTop(){
+  delegationModel.disabled=agent!=='hermes'
+  if(agentModel){
+    const opts=[...delegationModel.querySelectorAll('option')]
+    // El provider MANDA: dos providers pueden declarar el mismo modelo, así que
+    // casar solo por nombre preseleccionaba el equivocado (la sesión corría en
+    // cerebras y el selector marcaba llmgateway).
+    const match = opts.find(o=>o.value===agentModel)
+      || (agentProvider && opts.find(o=>o.value===`${agentProvider}/${agentModel}`))
+      || opts.find(o=>o.value.endsWith('/'+agentModel))
+    if(match) delegationModel.value=match.value
+  }
+  if(capaConversacional) delegationModel.dataset.tip=`Modelo del AGENTE delegado. La capa conversacional que te responde corre aparte en ${capaConversacional.provider} · ${capaConversacional.modelo}.`
+}
+
+async function cargarModelosDelegacion(){
+  delegationModel.innerHTML='<option value="">cargando…</option>'
+  if(agent!=='hermes'||!perfil)return
+  try{
+    const r=await fetch(`${DAEMON}/v1/hermes-models?profile=${encodeURIComponent(perfil)}`)
+    const j=await r.json()
+    delegationModel.innerHTML=''
+    // Agrupado por provider: `gemma4` (MoE de nan-builders) y `gemma-4-31b`
+    // (cerebras) son modelos distintos, y sin el provider no hay forma de saber
+    // cuál se está eligiendo.
+    const porProvider=new Map()
+    ;(j.models||[]).forEach(m=>{ if(!porProvider.has(m.provider)) porProvider.set(m.provider,[]); porProvider.get(m.provider).push(m) })
+    for(const [prov,ms] of porProvider){
+      const g=document.createElement('optgroup'); g.label=prov
+      ms.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.modelo+(m.esDefault?' (default)':'');g.appendChild(o)})
+      delegationModel.appendChild(g)
+    }
+    capaConversacional=j.conversationLayer||null
+    if(!agentModel&&j.defaultModel)agentModel=j.defaultModel
+    syncAgentTop()
+  }catch(e){delegationModel.innerHTML='<option value="">sin modelos</option>';syncAgentTop()}
+}
+delegationModel.addEventListener('change',async()=>{
+  const model=delegationModel.value
+  try{const r=await fetch(`${DAEMON}/v1/sessions/${encodeURIComponent(sessionId)}/delegation-model`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model})});if(!r.ok)throw new Error(`HTTP ${r.status}`);agentModel=model;agentProvider=(model.includes('/')?model.slice(0,model.indexOf('/')):'');if(ws&&ws.readyState===1)activarSala()}catch(e){delegationModel.value=agentModel;addMsg('assistant','No se pudo cambiar el modelo de delegación: '+e.message)}
+})
+
+/* ---------- agente por sesión (se elige al CREAR la sesión, no en el chat) ---------- */
+const AGENTES_UI = ['hermes','pi']
+let perfilesHermes=[]
+
+function cargarPerfiles(perfiles){
+  perfilesHermes=Array.isArray(perfiles)?perfiles:[]
+  newProfile.innerHTML=''
+  // `default` es el Hermes raíz (el que corre sin --profile). Es el único con
+  // el MCP de Trello, así que conviene que se distinga del resto.
+  perfilesHermes.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p==='default'?'default (Hermes raíz)':p;newProfile.appendChild(o)})
+  syncAgentTop()
+  cargarModelosDelegacion()
+  cargarSesionesHermes()
+}
+async function cargarSesionesHermes(){
+  agentSession.innerHTML='<option value="">Crear sesión nueva</option>'
+  if(newAgent.value!=='hermes'||!newProfile.value)return
+  try{ const r=await fetch(`${DAEMON}/v1/hermes-sessions?profile=${encodeURIComponent(newProfile.value)}`); const j=await r.json(); (j.sessions||[]).forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=`${s.title} · ${s.id}`;agentSession.appendChild(o)}); if(agentSession.value) cargarModelosDelegacion() }catch(e){}
+}
+function sesionAgente(){ return agent }   // agente de la sesión activa
+function renderSesTag(){
+  const t=$('#sesTag')
+  if(t) t.textContent=''
+  if(t) t.dataset.tip='Configuración de la sesión activa'
+  syncAgentTop()
+}
+async function fetchAgentes(){ try{ const r=await fetch(`${DAEMON}/v1/agents`); const j=await r.json(); if(Array.isArray(j.agents)&&j.agents.length) window._agentes=j.agents }catch(e){} }
+
+/* ---------- modo de voz ---------- */
+const modeToggle=$('#modeToggle'), modeLabel=$('#modeLabel'), ttsToggle=$('#ttsToggle')
+function setModo(m){
+  modo=m
+  modeLabel.textContent=m==='ptt'?'PTT':'Continuo'
+  modeToggle.classList.toggle('on',m==='cont')
+  if(m==='ptt'){ pararContinuo() }
+  else { syncContinuo() }
+  hintL.textContent = m==='cont'
+    ? (micEncendido?'Continuo · tocá el mic para encender/apagar — escuchando…':'Continuo · mic apagado (tocá el mic)')
+    : 'Push-to-talk · mantén el botón mic para hablar, suelta para enviar'
+  renderSesTag()
+}
+modeToggle.addEventListener('click',()=>setModo(modo==='ptt'?'cont':'ptt'))
+
+/* ---------- TTS toggle ---------- */
+function updateTtsToggle(){ ttsToggle.classList.toggle('on',ttsOn); ttsToggle.dataset.tip = ttsOn?'TTS activado — la respuesta se reproduce en voz':'TTS silenciado — solo texto' }
+ttsToggle.addEventListener('click',()=>{ ttsOn=!ttsOn; updateTtsToggle() })
+
+/* ---------- adjuntar (drop-up) ---------- */
+const attachBtn=$('#attachBtn'), dropUp=$('#dropUp')
+attachBtn.addEventListener('click',e=>{ e.stopPropagation(); dropUp.classList.toggle('open') })
+document.addEventListener('click',e=>{ if(!e.target.closest('.attach-wrap')) dropUp.classList.remove('open') })
+dropUp.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return
+  const act=b.dataset.act; dropUp.classList.remove('open')
+  if(act==='file'){
+    const inp=document.createElement('input'); inp.type='file'
+    inp.onchange=()=>{ const f=inp.files[0]; if(f && f.size<5*1024*1024){ const r=new FileReader(); r.onload=()=>{ addMsg('me','📎 '+f.name); enviarAdjunto(r.result, f.name) }; r.readAsDataURL(f) } else if(f){ addMsg('assistant','daemon: archivo >5MB (límite por ahora)') } }
+    inp.click()
+  } else if(act==='clipboard'){
+    navigator.clipboard.readText().then(t=>{ if(t){ addMsg('me','📋 (portapapeles)'); enviarTexto(t) } }).catch(()=>{})
+  } else if(act==='capture'){ addMsg('assistant','captura de pantalla: aún no conectada') }
+})
+async function enviarAdjunto(dataUrl, nombre){
+  const pedido='Analiza la imagen adjunta e identifica con precisión lo que aparece. Si es una caja de Pokémon, enumera todos los Pokémon visibles y separa lo seguro de lo incierto.'
+  if(ws&&ws.readyState===1){
+    ws.send(JSON.stringify({type:'attachment',text:pedido,name:nombre,dataUrl,sessionId,agent,profile:perfil,agentSessionId,agentModel}))
+  } else addMsg('assistant','daemon: sin conexión para enviar el adjunto')
+}
+
+/* ---------- infra (modelos + perfiles Hermes) ---------- */
+function renderInfra(inf){
+  const set=(dot,val,ok,label)=>{ dot.classList.toggle('ok',ok); dot.classList.toggle('bad',!ok); val.classList.toggle('ok',ok); val.classList.toggle('bad',!ok); val.textContent=ok?label:'down'; val.dataset.tip=label }
+  set($('#infStt'),$('#infSttV'),!!inf.stt, inf.sttModel || 'stt')
+  set($('#infTts'),$('#infTtsV'),!!inf.tts, inf.ttsModel || 'tts')
+  set($('#infOrca'),$('#infOrcaV'),!!inf.orca, 'up')
+  const hp=$('#infHermes'), hpv=$('#infHermesV')
+  if((inf.hermesProfiles||[]).length){
+    hp.classList.add('ok'); hp.classList.remove('bad'); hpv.classList.add('ok'); hpv.classList.remove('bad')
+    hpv.textContent=inf.hermesProfiles.join(', '); hpv.dataset.tip='Perfiles: '+inf.hermesProfiles.join(', ')
+    cargarPerfiles(inf.hermesProfiles)
+  }
+}
+async function checkInfra(){
+  try{
+    const r=await fetch(`${DAEMON}/v1/infra`); const j=await r.json(); renderInfra(j)
+  }catch(e){ renderInfra({stt:false,tts:false,orca:false,hermesProfiles:[]}) }
+}
+
+/* ---------- sesiones ---------- */
+const sesionesConocidas=new Map()
+function renderSessions(list){
+  sesionesConocidas.clear()
+  ;(list||[]).forEach(s=>sesionesConocidas.set(s.id,s))
+  sbList.innerHTML=''
+  if (!list.length){ sbList.innerHTML='<div class="sb-item"><span class="nm">(sin sesiones)</span></div>'; return }
+  for(const s of list){
+    const row=document.createElement('div')
+    const cls = s.id===sessionId?'active':'' 
+    const dotCls = s.estado==='hablando'?'speak':(s.estado==='escuchando'||s.estado==='transcribiendo')?'live':''
+    row.className='sb-item '+cls
+    const agentIcon = s.agente==='pi' ? 'π' : '✦'
+    row.innerHTML=`<span class="dot ${dotCls}"></span><span class="agent-icon" data-tip="Agente ${s.agente||'hermes'}">${agentIcon}</span><span class="nm"></span><span class="bdg">${s.estado||'idle'}</span><button class="sb-more" data-tip="Perfil, provider, modelo y contexto de la sesión" aria-label="Detalles">⋯</button><button class="sb-del" data-tip="Borrar esta sesión local" aria-label="Borrar">✕</button>`
+    row.querySelector('.sb-more').addEventListener('click',ev=>openSessionMenu(s,ev))
+    row.querySelector('.nm').textContent=s.titulo||s.id
+    row.querySelector('.nm').dataset.tip=`id: ${s.id}`
+    row.querySelector('.sb-del').addEventListener('click',(ev)=>{
+      ev.stopPropagation()
+      if(!confirm('¿Borrar la sesión "'+(s.titulo||s.id)+'"?')) return
+      fetch(`${DAEMON}/v1/sessions/${encodeURIComponent(s.id)}`,{method:'DELETE'}).then(()=>{
+        if(s.id===sessionId){ sessionId='default'; fetchChat() }
+        fetchSessions()
+      })
+    })
+    row.addEventListener('click',()=>{
+      if(s.id!==sessionId){
+        pararContinuo()   // no dejar el mic grabando en la sesión antigua
+        sessionId=s.id; salaActiva=sessionId; if(s.agente) agent=s.agente; perfil=s.perfil||''; agentSessionId=s.agentSessionId||''; agentModel=s.agentModel||''; agentProvider=s.agentProvider||''
+        activarSala(); renderSessions(list); syncAgentTop(); cargarModelosDelegacion(); renderSesTag(); fetchChat(); syncContinuo()
+      }
+    })
+    sbList.appendChild(row)
+  }
+}
+async function fetchSessions(){
+  try{
+    const r=await fetch(`${DAEMON}/v1/sessions`); const j=await r.json(); const list=j.sessions||[]
+    const active=list.find(s=>s.id===sessionId)
+    if(active){ agent=active.agente||agent; perfil=active.perfil||''; agentSessionId=active.agentSessionId||''; agentModel=active.agentModel||''; agentProvider=active.agentProvider||''; syncAgentTop(); cargarModelosDelegacion() }
+    renderSessions(list)
+  }catch(e){ renderSessions([{id:sessionId,agente:agent,estado:'idle'}]) }
+}
+function abrirNuevaSesion(){ sessionModal.hidden=false; actualizarPerfilForm(); newSessionId.value=''; newSessionId.focus() }
+function actualizarPerfilForm(){ const hermes=newAgent.value==='hermes'; newProfile.disabled=!hermes; agentSession.disabled=!hermes; piPathRow.classList.toggle('show',!hermes); if(hermes)piWorkingDir.value=''; cargarSesionesHermes() }
+newAgent.addEventListener('change',actualizarPerfilForm)
+newProfile.addEventListener('change',cargarSesionesHermes)
+sessionCancel.addEventListener('click',()=>sessionModal.hidden=true)
+sessionModal.addEventListener('click',e=>{if(e.target===sessionModal)sessionModal.hidden=true})
+pickPiPath.addEventListener('click',async()=>{ if(window.hermesNative?.chooseWorkingDirectory){const p=await window.hermesNative.chooseWorkingDirectory();if(p)piWorkingDir.value=p} })
+let menuSession=null
+function closeSessionMenu(){sessionMenu.hidden=true;menuSession=null}
+function openSessionMenu(s, ev){ev.stopPropagation();menuSession=s;sessionMenuMeta.innerHTML=`<b>nombre:</b> ${s.titulo||s.id}<br><b>id local:</b> ${s.id}<br><b>agente:</b> ${s.agente||'—'}<br><b>perfil:</b> ${s.perfil||'—'}${s.perfilFijado?' <span style="opacity:.6">(fijo)</span>':''}<br><b>provider:</b> ${s.agentProvider||'—'}<br><b>modelo:</b> ${s.agentModel||'—'}<br><b>Hermes:</b> ${s.agentSessionId||'—'}<br><b>contexto:</b> ${resumenCtx(s.agentContext)}${s.workingDir?`<br><b>ruta:</b> ${s.workingDir}`:''}`
+  openContext.disabled=!(s.agente==='hermes'&&s.perfil);const r=ev.currentTarget.getBoundingClientRect();sessionMenu.style.left=Math.max(8,Math.min(window.innerWidth-278,r.right-270))+'px';sessionMenu.style.top=Math.min(window.innerHeight-190,r.bottom+4)+'px';sessionMenu.hidden=false}
+document.addEventListener('click',e=>{if(!sessionMenu.hidden&&!e.target.closest('.session-menu'))closeSessionMenu()})
+
+/* ---------- modal de contexto del agente (SOUL.md + skills + cwd) ---------- */
+// El contexto NO es el historial: es el system prompt real del perfil.
+function resumenCtx(ctx){
+  if(!ctx||!ctx.loaded) return 'sin SOUL.md'
+  const partes=[`SOUL.md ${ctx.soulScope||'—'} (${ctx.soulBytes||0} B)`,`${ctx.skills||0} skills`]
+  partes.push(ctx.historialCargado?`${ctx.messages||0} msgs de historial`:'sin historial remoto')
+  return partes.join(' · ')
+}
+function ctxMensaje(texto,clase){contextMsg.textContent=texto||'';contextMsg.className='ctx-msg'+(clase?' '+clase:'')}
+function pintarContexto(c){
+  contextSoul.value=c.soul||''
+  contextPath.textContent=c.soulPath||'(el perfil aún no tiene SOUL.md propio)'
+  contextMeta.innerHTML=`<b>perfil</b><span>${contextPerfil}</span>`
+    +`<b>origen</b><span>${c.soulScope||'—'}${c.soulScope==='global'?' (heredado; al guardar se crea uno propio del perfil)':''}</span>`
+    +`<b>ruta de trabajo</b><span>${c.cwd||'—'}</span>`
+    +(c.descripcion?`<b>descripción</b><span>${c.descripcion}</span>`:'')
+  contextSkills.innerHTML=(c.skills||[]).map(k=>`<span>${k}</span>`).join('')||'<span>sin skills</span>'
+}
+async function cargarContextoModal(){
+  ctxMensaje('cargando…')
+  try{
+    const r=await fetch(`${DAEMON}/v1/agent-context?profile=${encodeURIComponent(contextPerfil)}`)
+    if(!r.ok) throw new Error(`HTTP ${r.status}`)
+    pintarContexto((await r.json()).context||{})
+    ctxMensaje('')
+  }catch(e){ctxMensaje('No se pudo cargar el contexto: '+e.message,'bad')}
+}
+function abrirContexto(p){contextPerfil=p;contextModal.hidden=false;cargarContextoModal()}
+function cerrarContexto(){contextModal.hidden=true;ctxMensaje('')}
+openContext.addEventListener('click',()=>{if(menuSession&&menuSession.perfil)abrirContexto(menuSession.perfil);closeSessionMenu()})
+renameSession.addEventListener('click',async()=>{
+  const s=menuSession; closeSessionMenu(); if(!s) return
+  const titulo=prompt('Nuevo nombre de la conversación:', s.titulo||s.id)
+  if(titulo===null) return
+  try{
+    const r=await fetch(`${DAEMON}/v1/sessions/${encodeURIComponent(s.id)}/title`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:titulo})})
+    if(!r.ok) throw new Error(`HTTP ${r.status}`)
+    await fetchSessions()
+  }catch(e){ addMsg('assistant','No se pudo renombrar: '+e.message) }
+})
+contextClose.addEventListener('click',cerrarContexto)
+contextReload.addEventListener('click',cargarContextoModal)
+contextModal.addEventListener('click',e=>{if(e.target===contextModal)cerrarContexto()})
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!contextModal.hidden)cerrarContexto()})
+contextSave.addEventListener('click',async()=>{
+  contextSave.disabled=true;ctxMensaje('guardando…')
+  try{
+    const r=await fetch(`${DAEMON}/v1/agent-context`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile:contextPerfil,soul:contextSoul.value})})
+    if(!r.ok) throw new Error(`HTTP ${r.status}`)
+    pintarContexto((await r.json()).context||{})
+    ctxMensaje('Guardado. Se dejó copia en SOUL.md.bak','ok')
+    fetchSessions()
+  }catch(e){ctxMensaje('No se pudo guardar: '+e.message,'bad')}
+  finally{contextSave.disabled=false}
+})
+copyLocalId.addEventListener('click',()=>{if(menuSession)navigator.clipboard?.writeText(menuSession.id);closeSessionMenu()})
+copyRemoteId.addEventListener('click',()=>{if(menuSession?.agentSessionId)navigator.clipboard?.writeText(menuSession.agentSessionId);closeSessionMenu()})
+reloadContext.addEventListener('click',()=>{if(menuSession){if(menuSession.id===sessionId)fetchChat();else addMsg('assistant','Selecciona primero la sesión para recargar su contexto.')};closeSessionMenu()})
+sessionForm.addEventListener('submit',async e=>{
+  e.preventDefault(); const titulo=newSessionId.value.trim(), ag=newAgent.value, prof=ag==='hermes'?newProfile.value:'', remoteSessionId=ag==='hermes'?agentSession.value:''
+  if(!titulo || (ag==='hermes'&&!perfilesHermes.includes(prof))) return
+  try{
+    // Se manda el TÍTULO: el id lo deriva el daemon y ya no vuelve a cambiar,
+    // así renombrar la conversación no arrastra el hilo ni los jobs.
+    const r=await fetch(`${DAEMON}/v1/sessions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:titulo,agent:ag,profile:prof,agentSessionId:remoteSessionId,workingDir:ag==='pi'?piWorkingDir.value:''})})
+    if(!r.ok) throw new Error(`HTTP ${r.status}`)
+    const j=await r.json(); sessionId=j.session.id; agent=j.session.agente; perfil=j.session.perfil||''; agentSessionId=j.session.agentSessionId||''; agentModel=j.session.agentModel||''; agentProvider=j.session.agentProvider||''
+    salaActiva=sessionId; sessionModal.hidden=true; activarSala(); syncAgentTop(); cargarModelosDelegacion(); renderSesTag(); await fetchSessions(); await fetchChat()
+  }catch(err){ addMsg('assistant','No se pudo crear la sesión: '+err.message) }
+})
+sbPlus.addEventListener('click',abrirNuevaSesion); sbNew.addEventListener('click',abrirNuevaSesion)
+toggle.addEventListener('click',()=>app.classList.toggle('collapsed'))
+
+/* ---------- pill / estados ---------- */
+function setPill(estado){
+  pill.className='pill'
+  if(estado==='conectado'){ pill.classList.add('ok'); pillText.textContent='conectado' }
+  else if(estado==='escuchando'){ pill.classList.add('listen'); pillText.textContent='escuchando' }
+  else if(estado==='hablando'){ pill.classList.add('listen'); pillText.textContent='hablando' }
+  else if(estado==='daemon-off'){ pill.classList.add('off'); pillText.textContent='daemon off' }
+  else { pillText.textContent=estado }
+}
+function setOffline(v){
+  offline=v
+  if(v){ setPill('daemon-off'); sbDaemon.classList.add('off'); sbDaemon.querySelector('.txt').textContent='daemon · sin conexión'; showBanner(); composerText.disabled=true; pararContinuo() }
+  else { sbDaemon.classList.remove('off'); sbDaemon.querySelector('.txt').textContent='daemon · realtime WS'; hideBanner(); composerText.disabled=false; if(!listening) setPill('conectado'); syncContinuo() }
+}
+
+/* ---------- render hilo ---------- */
+function divider(){
+  const d=document.createElement('div'); d.className='divider'; d.innerHTML='<span>Hoy</span>'; chatInner.appendChild(d)
+}
+// El estado vacío se creaba y nadie lo quitaba: quedaba "Sin mensajes aún"
+// colgado encima de la conversación.
+function quitarEstadoVacio(){ const e=chatInner.querySelector('.empty'); if(e) e.remove() }
+
+function addMsg(rol,texto,opts={}){
+  quitarEstadoVacio()
+  const m=document.createElement('div'); const me=rol==='me'
+  m.className='msg '+(me?'me':'assistant')+(opts.transc?' transc':'')
+  const av=document.createElement('div'); av.className='av'; av.textContent=me?'R':'J'
+  const col=document.createElement('div'); col.className='col'
+  const b=document.createElement('div'); b.className='bubble'; b.textContent=texto
+  col.appendChild(b); m.appendChild(av); m.appendChild(col)
+  chatInner.appendChild(m); scroll()
+  return m
+}
+function scroll(){ chatScroll.scrollTop=chatScroll.scrollHeight }
+function emptyState(){
+  const e=document.createElement('div'); e.className='empty'
+  e.innerHTML=`<div class="mark"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.2 14.1 9.9 21.8 12 14.1 14.1 12 21.8 9.9 14.1 2.2 12 9.9 9.9Z"/></svg></div>
+    <div class="tt">Sin mensajes aún</div>
+    <div class="ss">Mantén pulsado el micrófono o escribe. Si hace falta, delego en un agente y te lo resumo hablando.</div>
+    <div class="chips"></div>`
+  const chips=['revisa el tablero de Venturi','resumen de pendientes hoy','quién eres']
+  const c=e.querySelector('.chips')
+  chips.forEach(t=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=t; b.addEventListener('click',()=>enviarTexto(t)); c.appendChild(b) })
+  chatInner.appendChild(e)
+}
+function showBanner(){
+  if(document.querySelector('.banner'))return
+  const b=document.createElement('div'); b.className='banner'
+  b.innerHTML=`<span class="icn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"/><path d="M10.3 3.9 2.6 17.4A2 2 0 0 0 4.3 20.4h15.4a2 2 0 0 0 1.7-3l-7.7-13.5a2 2 0 0 0-3.4 0Z"/></svg></span>
+    <div class="bt"><div class="t">Daemon local sin conexión</div><div class="d">ws://127.0.0.1:8471 · reintentando cada 3s</div></div>
+    <button class="btn">Reintentar</button>`
+  b.querySelector('.btn').addEventListener('click',()=>{ hideBanner(); if(ws) ws.close() })
+  chatInner.appendChild(b); scroll()
+}
+function hideBanner(){ const b=document.querySelector('.banner'); if(b) b.remove() }
+async function fetchChat(){
+  const requestedSession=sessionId
+  // NO confiar en el global: quien cambió de sesión puede no haberlo
+  // actualizado, y entonces se pinta el historial de Hermes de la sesión
+  // anterior dentro de la nueva. La sesión sabe cuál es el suyo.
+  // Si todavía no conocemos la sesión, se pide la lista antes de decidir: se
+  // corría la carrera de renderizar con el global viejo. Y si aun así no
+  // aparece, va vacío — mostrar el historial de OTRA sesión es peor que no
+  // mostrar ninguno.
+  if(!sesionesConocidas.has(requestedSession)) await fetchSessions().catch(()=>{})
+  if(requestedSession!==sessionId) return
+  const requestedAgentSession=sesionesConocidas.get(requestedSession)?.agentSessionId||''
+  const token=++chatLoadToken
+  chatInner.innerHTML=''
+  try{
+    const local=await fetch(`${DAEMON}/v1/thread?sessionId=${encodeURIComponent(requestedSession)}`).then(r=>r.json())
+    let remote=[]
+    if(requestedAgentSession && perfil){
+      const remoteUrl=`${DAEMON}/v1/hermes-session-history?profile=${encodeURIComponent(perfil)}&sessionId=${encodeURIComponent(requestedAgentSession)}`
+      remote=(await fetch(remoteUrl).then(r=>r.json())).messages||[]
+    }
+    if(token!==chatLoadToken || requestedSession!==sessionId) return
+    const msgs=[...remote,...(local.messages||[])]
+    if(!msgs.length){ divider(); emptyState(); return }
+    divider()
+    if(remote.length){ const label=document.createElement('div'); label.className='history-label'; label.textContent='Historial de Hermes'; chatInner.appendChild(label) }
+    for(const m of msgs) addMsg(m.role==='user'?'me':'assistant', m.text)
+  }catch(e){
+    if(token===chatLoadToken && requestedSession===sessionId){ divider(); emptyState() }
+  }
+}
+
+/* ---------- tool call ---------- */
+function addTool(arg){
+  quitarEstadoVacio()
+  const t=document.createElement('div'); t.className='tool'
+  const argObj=arg&&typeof arg==='object'?arg:null
+  const argStr=typeof arg==='string'?arg:(argObj?.pedido||JSON.stringify(arg))
+  const metaStr=argObj?[argObj.agente,argObj.perfil,argObj.provider,argObj.modelo].filter(Boolean).join(' · '):''
+  t.innerHTML=`<div class="trow">
+      <span class="spin"></span><span class="lbl">tool</span><span class="chip">${agent}</span>
+      <span class="req">→ ${String(argStr).slice(0,44)}</span><span class="ms"></span><span class="caret"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </div><div class="bar"><i></i></div>
+    <div class="tbody"><div class="k">perfil · modelo</div><div class="pv meta"></div><div class="k">pedido</div><div class="pv pedido"></div><div class="k">resultado</div><div class="rv"></div></div>`
+  t.querySelector('.trow').addEventListener('click',()=>t.classList.toggle('open'))
+  t.querySelector('.pv.meta').textContent=metaStr||'sin metadatos'
+  t.querySelector('.pv.pedido').textContent=argStr
+  chatInner.appendChild(t); scroll()
+  return {
+    el:t,
+    ok(res){
+      t.querySelector('.spin').remove(); t.querySelector('.bar').remove()
+      const c=document.createElement('span'); c.className='check'; c.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>'
+      t.querySelector('.trow').insertBefore(c,t.querySelector('.lbl'))
+      t.querySelector('.ms').textContent=''
+      t.querySelector('.rv').textContent = typeof res==='string'?res:JSON.stringify(res)
+      t.classList.remove('err')
+    },
+    fail(err){
+      t.querySelector('.spin').remove(); t.querySelector('.bar').remove()
+      const x=document.createElement('span'); x.className='x'; x.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+      t.querySelector('.trow').insertBefore(x,t.querySelector('.lbl'))
+      t.querySelector('.ms').textContent=''
+      t.querySelector('.rv').textContent=err
+      t.classList.add('err')
+    }
+  }
+}
+
+/* ---------- transcripción ---------- */
+function inicioTransc(){ if(!trash) trash=addMsg('me','',{transc:true}) }
+function pushTransc(texto){ if(trash){ const b=trash.querySelector('.bubble'); if(b) b.textContent=texto } scroll() }
+function finTransc(texto){ if(trash){ if(texto){const b=trash.querySelector('.bubble'); if(b) b.textContent=texto} trash.classList.remove('transc'); trash=null } }
+
+/* ---------- WS ---------- */
+let ws=null
+let uiTurnId=0, uiEventSeq=0, uiSpeakingTurn=0, uiTools=new Map()
+const AVISO_JOB={
+  timed_out: j=>`La consulta al agente superó el tiempo límite y no devolvió nada, señor. (${j.perfil||'—'} · ${j.provider||'—'} · ${j.modelo||'—'})`,
+  failed:    j=>`La consulta al agente falló: ${j.error||'sin detalle'}`,
+  cancelled: ()=>'Consulta cancelada.',
+  // La capa ya lo dijo con sus palabras en la respuesta; aquí no se duplica.
+  incompleta: ()=>'',
+  interrupted: ()=>'La consulta quedó a medias porque el daemon se reinició.',
+}
+function aceptarEvento(p){
+  if(!p || p.sesionId!==sessionId) return false
+  // Los jobs de fondo sobreviven a turnos posteriores; no son eventos atrasados.
+  if(p.jobId) return true
+  const turn=Number(p.turnId||0), seq=Number(p.seq||0)
+  if(turn && turn<uiTurnId) return false
+  if(turn>uiTurnId){ uiTurnId=turn; uiEventSeq=0; uiSpeakingTurn=0 }
+  if(seq && seq<uiEventSeq) return false
+  if(seq) uiEventSeq=seq
+  return true
+}
+function activarSala(){
+  salaActiva=sessionId
+  if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:'activate',sessionId,agent,profile:perfil,agentSessionId,agentModel}))
+}
+function connectWS(){
+  ws=new WebSocket(WS_URL)
+  ws.onopen=()=>{ activarSala(); if(!listening) setPill('conectado') }
+  ws.onclose=()=>{ setOffline(true); setTimeout(connectWS,3000) }
+  ws.onerror=()=>ws.close()
+  ws.onmessage=ev=>{
+    let m; try{ m=JSON.parse(ev.data) }catch{ return }
+    // Un WebSocket puede sobrevivir al cambio de sesión: jamás pintar eventos ajenos.
+    const eventSession=m.payload?.sesionId
+    if(!eventSession || eventSession!==sessionId || !aceptarEvento(m.payload)) return
+    if(m.type==='phase'){
+      const st=m.payload?.estado
+      if(st==='escuchando'){ listening=true; setPill('escuchando'); micBtn.classList.add('rec') }
+      else if(st==='transcribiendo'){ listening=true; setPill('escuchando'); pararContinuo() }
+      else if(st==='hablando'){ listening=false; setPill('hablando'); micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararContinuo() }
+      else { listening=false; micBtn.classList.remove('rec','mute'); if(!offline) setPill('conectado'); syncContinuo() }
+    }
+    if(m.type==='transcripcion'){ inicioTransc(); pushTransc(m.payload.text) }
+    if(m.type==='turno.recibido'){ confirmarAcuse(); return }
+    if(m.type==='worker.listo'){ setHint(`agente listo`); return }
+    // Latido de la delegación: sin esto la tool queda muda más de un minuto y
+    // parece colgada.
+    if(m.type==='delegation.latido'){
+      const tool=uiTools.get(m.payload.jobId)
+      if(tool) tool.el.querySelector('.req').textContent=`→ trabajando · ${m.payload.segundos}s`
+      return
+    }
+    if(m.type==='cancelled'){ detenerAudio(); finTransc(); setPill('idle'); return }  // el aviso lo emite delegation.status
+    if(m.type==='speech.frase'){ window.__speechCount=(window.__speechCount||0)+1; finTransc(); listening=false; micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararContinuo(); if(ttsOn) playWav(m.payload.audio, m.payload.turnId) }
+    if(m.type==='tool.start'){
+      if(window.__activeTool) window.__activeTool.fail('reemplazada por una nueva ejecución')
+      window.__activeTool=addTool(m.payload||'delegación')
+      window.__activeTool.toolId=m.payload?.jobId||m.payload?.toolId||''
+      if(m.payload?.jobId) uiTools.set(m.payload.jobId,window.__activeTool)
+    }
+    if(m.type==='delegation.status'){
+      window.__jobs=window.__jobs||new Map(); window.__jobs.set(m.payload.jobId,m.payload)
+      const tool=uiTools.get(m.payload.jobId)||window.__activeTool
+      if(tool){
+        const s=m.payload.estado||'running'; tool.el.querySelector('.req').textContent='→ '+s
+        if(s==='completed') tool.ok(m.payload.resultado||'completado')
+        else if(s==='incompleta') tool.fail('no resolvió el pedido'+(m.payload.motivo?': '+m.payload.motivo:''))
+        else if(s!=='queued'&&s!=='running') tool.fail(m.payload.error||s)
+      }
+      // Un job que muere sin resultado tiene que decirse: si no, queda un
+      // "voy a consultar" sin respuesta y sin explicación.
+      if(AVISO_JOB[m.payload.estado] && !m.payload.avisado){
+        m.payload.avisado=true
+        const aviso=AVISO_JOB[m.payload.estado](m.payload)
+        if(aviso) addMsg('assistant', aviso)
+      }
+    }
+    if(m.type==='tool.end'){
+      // Solo llega por la ruta en línea (sin job). Las delegaciones con job las
+      // cierra `delegation.status`, que es la fuente de verdad.
+      const tool=(m.payload?.jobId&&uiTools.get(m.payload.jobId))||window.__activeTool
+      if(tool){ if(m.payload?.ok) tool.ok(m.payload?.resultado||m.payload?.result||''); else tool.fail(m.payload?.error||'error'); if(tool===window.__activeTool) window.__activeTool=null }
+    }
+    if(m.type==='respuesta'){
+      finTransc(m.payload?.textoTransc || '')
+      if(m.payload?.delegation && !m.payload?.terminal){ const tc=addTool(m.payload.delegation); tc.ok('') }
+      if(m.payload?.text){ addMsg('assistant', m.payload.text) }
+      // cooldown anti-feedback: no reanudar el continuo inmediatamente tras hablar (evita escuchar el TTS propio)
+      if(modo==='cont' && micEncendido){
+        setTimeout(()=>{ pararContinuo(); setTimeout(()=>syncContinuo(), 1200) }, 600)
+      }
+      setTimeout(()=>{ micBtn.classList.remove('mute'); if(!offline) setPill('conectado') },800)
+    }
+    if(m.type==='error'){ finTransc(); addMsg('assistant','daemon: '+(m.payload?.error||'error')) }
+  }
+}
+
+/* ---------- envío ---------- */
+// El mensaje se pinta al instante, pero queda marcado como pendiente hasta que
+// el daemon acusa recibo. Antes, un turno perdido se veía idéntico a uno lento:
+// el mensaje ahí y nada más, para siempre.
+let pendienteDeAcuse=null
+function enviarTexto(texto){
+  const t=texto.trim()
+  if(!t)return
+  const burbuja=addMsg('me',t)
+  if(offline){ marcarNoEnviado(burbuja,'sin conexión con el daemon'); return }
+  if(ws&&ws.readyState===1){
+    ws.send(JSON.stringify({type:'text',text:t,sessionId,agent,profile:perfil,agentSessionId,agentModel,modo:'texto'}))
+    esperarAcuse(burbuja)
+  } else fallbackREST(t,'texto')
+}
+function esperarAcuse(burbuja){
+  clearTimeout(pendienteDeAcuse?.timer)
+  const timer=setTimeout(()=>{ if(pendienteDeAcuse&&pendienteDeAcuse.burbuja===burbuja) marcarNoEnviado(burbuja,'el daemon no acusó recibo') }, 8000)
+  pendienteDeAcuse={burbuja,timer}
+}
+function confirmarAcuse(){ if(!pendienteDeAcuse)return; clearTimeout(pendienteDeAcuse.timer); pendienteDeAcuse=null }
+function marcarNoEnviado(burbuja,motivo){
+  pendienteDeAcuse=null
+  if(!burbuja)return
+  burbuja.classList.add('no-enviado')
+  burbuja.dataset.tip=`No se envió: ${motivo}`
+  addMsg('assistant',`No pude enviar tu mensaje: ${motivo}. Revisá el daemon y reintentá.`)
+}
+async function fallbackREST(texto, modo){
+  try{
+    const r=await fetch(`${DAEMON}/v1/turn`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text: texto, sessionId, agent, profile:perfil, agentSessionId, agentModel, modo:modo||'texto'})})
+    const j=await r.json()
+    if(j.delegation){const tc=addTool(j.delegation);tc.ok('')}
+    if(j.text){ addMsg('assistant',j.text); if(ttsOn && j.audio_base64) playWav(j.audio_base64) }
+  }catch(e){ addMsg('assistant','daemon: '+e.message) }
+}
+
+/* ---------- audio ---------- */
+let audioQ=[], audioOn=false, audioActual=null
+// Conversión base64 SEGURA para buffers grandes (spread ... corrompe con chunks grandes → EBML inválido)
+function bufToB64(buf){
+  let bin='', chunk=0x8000
+  for(let i=0;i<buf.length;i+=chunk){
+    bin += String.fromCharCode.apply(null, buf.subarray(i, i+chunk))
+  }
+  return btoa(bin)
+}
+// Cola de reproducción del TTS.
+//
+// Tres cosas que la versión anterior no hacía y provocaban audio pisado:
+//  1. cada frase se etiqueta con su turno; si empieza un turno nuevo, lo que
+//     quedaba en cola del anterior se descarta en vez de sonar encima;
+//  2. se espera al 'ended' real antes de pasar a la siguiente (y el timeout de
+//     seguridad se cancela al terminar, para no adelantar la cola);
+//  3. se revocan los object URLs, que antes se acumulaban por frase.
+let audioTurnoActual=0
+function playWav(b64, turno){
+  if(!b64)return
+  try{
+    const t=Number(turno||uiTurnId||0)
+    if(t && t<audioTurnoActual) return          // frase de un turno ya superado
+    if(t>audioTurnoActual){ audioTurnoActual=t; descartarCola() }
+    const url=URL.createObjectURL(new Blob([Uint8Array.from(atob(b64),c=>c.charCodeAt(0))],{type:'audio/wav'}))
+    audioQ.push({url,turno:t,audio:null})
+    nextAudio()
+  }catch(e){}
+}
+function descartarCola(){ audioQ.splice(0).forEach(it=>{try{URL.revokeObjectURL(it.url)}catch(e){}}) }
+function detenerAudio(){
+  descartarCola()
+  if(audioActual){ try{audioActual.pause()}catch(e){} try{URL.revokeObjectURL(audioActual.src)}catch(e){} audioActual=null }
+  audioOn=false
+}
+function nextAudio(){
+  if(audioOn||!audioQ.length)return
+  const item=audioQ.shift()
+  if(item.turno && item.turno<audioTurnoActual){ try{URL.revokeObjectURL(item.url)}catch(e){} return nextAudio() }
+  audioOn=true
+  const a=new Audio(item.url); audioActual=a
+  let cerrado=false
+  const siguiente=()=>{
+    if(cerrado)return; cerrado=true
+    clearTimeout(guarda)
+    try{URL.revokeObjectURL(item.url)}catch(e){}
+    if(audioActual===a) audioActual=null
+    audioOn=false; nextAudio()
+  }
+  // Red de seguridad por si el elemento nunca emite 'ended' (blob corrupto).
+  const guarda=setTimeout(()=>{ try{a.pause()}catch(e){}; siguiente() }, 40000)
+  a.onended=siguiente
+  a.onerror=siguiente
+  a.play().catch(siguiente)
+}
+
+// Barge-in: hablar encima del asistente lo calla y cancela la delegación viva.
+// Cortar solo el audio dejaría al agente trabajando contra un turno que Robert
+// ya descartó, y su respuesta llegaría fuera de contexto.
+function asistenteHablando(){ return audioOn || audioQ.length>0 }
+function bargeIn(){
+  // Solo se corta si estamos hablando. Una pregunta de seguimiento mientras el
+  // agente trabaja en silencio NO debe matarle la delegación: eso convertía
+  // cada repregunta en una consulta perdida.
+  if(!asistenteHablando()) return
+  detenerAudio()
+  if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:'cancel',sessionId}))
+}
+
+/* ---------- mic push-to-talk ---------- */
+let rec=null, micStream=null, hablando=false, recOpts={}, recChunks=[]
+let contRec=null, contStream=null   // grabación continua (modo contínuo)
+function pararMic(){ if(rec){try{rec.stop()}catch(e){}} if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null} rec=null }
+
+/* ---- modo continuo: segmentos WebM completos, no fragmentos ---- */
+let lastContTurno=0
+let contTimer=null, vadTimer=null
+let contStopping=false
+// Escucha la energía del micrófono y cierra la captura cuando hay silencio
+// sostenido. Marca en el recorder si hubo frase, para no mandar ruido al STT.
+let contAudioCtx=null, contAnalizador=null, contFuente=null, contStreamVigilado=null
+function vigilarSilencio(recorder){
+  const det=new DetectorVoz()
+  recorder.__huboFrase=false
+  try{
+    if(!contAudioCtx || contAudioCtx.state==='closed'){
+      contAudioCtx=new (window.AudioContext||window.webkitAudioContext)()
+      contAnalizador=contAudioCtx.createAnalyser()
+      contAnalizador.fftSize=1024
+      contStreamVigilado=null
+    }
+    // El grafo hay que RECONECTARLO cuando cambia el stream. Al cambiar de
+    // sesión se libera el micrófono y se pide uno nuevo; si el analizador
+    // sigue colgado del stream muerto lee energía 0 para siempre, el detector
+    // descarta todas las capturas y no se envía nada. Se veía como "el cambio
+    // de sesión lo rompió" y como "no aparecen tool calls".
+    if(contStreamVigilado!==contStream){
+      if(contFuente){ try{ contFuente.disconnect() }catch(e){} }
+      contFuente=contAudioCtx.createMediaStreamSource(contStream)
+      contFuente.connect(contAnalizador)
+      contStreamVigilado=contStream
+    }
+    if(contAudioCtx.state==='suspended') contAudioCtx.resume().catch(()=>{})
+  }catch(e){
+    // Sin Web Audio no hay VAD: se cae al corte por reloj para no quedar mudo.
+    vadTimer=setTimeout(()=>{vadTimer=null;if(recorder.state==='recording'){recorder.__huboFrase=true;recorder.stop()}},4000)
+    return
+  }
+  const buf=new Float32Array(contAnalizador.fftSize)
+  const t0=performance.now()
+  const tick=()=>{
+    if(recorder.state!=='recording'||contRec!==recorder){ vadTimer=null; return }
+    contAnalizador.getFloatTimeDomainData(buf)
+    const r=det.procesar(energiaRms(buf), performance.now()-t0)
+    if(listening) micBtn.classList.toggle('voz', r.estado==='hablando')
+    if(!r.accion){ vadTimer=setTimeout(tick,100); return }
+    vadTimer=null
+    recorder.__huboFrase = r.accion==='cortar'
+    try{ recorder.stop() }catch(e){}
+  }
+  vadTimer=setTimeout(tick,100)
+}
+
+async function arrancarContinuo(){
+  if(contRec || modo!=='cont' || !micEncendido || offline) return
+  try{
+    if(!contStream) contStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})
+    let opts={}
+    if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))opts={mimeType:'audio/webm;codecs=opus'}
+    else if(MediaRecorder.isTypeSupported('audio/mp4'))opts={mimeType:'audio/mp4'}
+    const recorder=new MediaRecorder(contStream,opts)
+    contRec=recorder
+    const chunks=[]
+    recorder.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data) }
+    recorder.onstop=async()=>{
+      if(contRec===recorder) contRec=null
+      const blob=new Blob(chunks,{type:opts.mimeType||'audio/webm'})
+      // El detector ya decidió si esto era una frase. La compuerta de 6s que
+      // había aquí descartaba capturas buenas: existía para tapar los cortes
+      // ciegos, y con cierre por silencio sobra.
+      if(!contStopping && !offline && recorder.__huboFrase && blob.size>=1024){
+        lastContTurno=Date.now()
+        await flushContinuo(blob,opts.mimeType||'audio/webm')
+      }
+      if(!contStopping && modo==='cont' && micEncendido && !offline){
+        contTimer=setTimeout(()=>{contTimer=null;arrancarContinuo()},250)
+      }
+    }
+    recorder.start() // sin timeslice: este recorder produce un WebM autocontenido
+    // Se cierra por SILENCIO, no por reloj. El corte fijo a 3s partía cualquier
+    // frase más larga a mitad de palabra y el STT recibía un fragmento.
+    vigilarSilencio(recorder)
+    listening=true; micBtn.classList.add('rec'); docBody.classList.add('listening'); setPill('escuchando')
+  }catch(err){ contRec=null; if(contStream){contStream.getTracks().forEach(t=>t.stop());contStream=null} addMsg('assistant','mic (continuo): '+err.message) }
+}
+async function flushContinuo(blob,mime){
+  const ab=new Uint8Array(await blob.arrayBuffer())
+  if(ab.length<1024 || !ws || ws.readyState!==1) return
+  ws.send(JSON.stringify({type:'audio',data:bufToB64(ab),mime,sessionId,agent,profile:perfil,agentSessionId,agentModel}))
+  ws.send(JSON.stringify({type:'audio-end',sessionId,agent,profile:perfil,agentSessionId,agentModel,mime}))
+}
+function pararContinuo(){
+  contStopping=true
+  if(contTimer){clearTimeout(contTimer);contTimer=null}
+  if(vadTimer){clearTimeout(vadTimer);vadTimer=null}
+  if(contRec){try{contRec.stop()}catch(e){} contRec=null}
+  if(contStream){contStream.getTracks().forEach(t=>t.stop());contStream=null}
+  contStreamVigilado=null
+  listening=false; micBtn.classList.remove('rec'); docBody.classList.remove('listening')
+  setTimeout(()=>{contStopping=false},100)
+}
+// al cambiar modo/mic toggle, arranca o para el continuo
+function syncContinuo(){ if(modo==='cont' && micEncendido && !offline) arrancarContinuo(); else pararContinuo() } (function(){contStopping=false})()
+async function flushAudio(blob){
+  if(!blob||!blob.size){finTransc();return}
+  const ab=new Uint8Array(await blob.arrayBuffer())
+  if(!ab.length){finTransc();return}
+  const b64=bufToB64(ab)
+  inicioTransc(); pushTransc('…')
+  if(ws&&ws.readyState===1){
+    ws.send(JSON.stringify({type:'audio',data:b64,mime:recOpts.mimeType||'audio/webm',sessionId,agent,profile:perfil,agentSessionId,agentModel}))
+    ws.send(JSON.stringify({type:'audio-end',sessionId,agent,profile:perfil,agentSessionId,agentModel,mime:recOpts.mimeType||'audio/webm'}))
+  }else fallbackREST('')
+}
+micBtn.addEventListener('click',()=>{
+  if(modo!=='cont') return
+  micEncendido=!micEncendido
+  micBtn.classList.toggle('rec', micEncendido && modo==='cont')
+  micBtn.classList.toggle('mute', !micEncendido)
+  syncContinuo()
+  hintL.textContent = micEncendido?'Continuo · tocá el mic para apagar — escuchando…':'Continuo · mic apagado (tocá el mic)'
+})
+micBtn.addEventListener('mousedown',async e=>{
+  if(modo==='cont') return
+  e.preventDefault(); if(hablando)return; bargeIn(); hablando=true; micBtn.classList.add('rec'); setPill('escuchando')
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})
+    if(!hablando){pararMic();return}
+    recOpts={}
+    if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))recOpts={mimeType:'audio/webm;codecs=opus'}
+    else if(MediaRecorder.isTypeSupported('audio/mp4'))recOpts={mimeType:'audio/mp4'}
+    rec=new MediaRecorder(micStream,recOpts); recChunks=[]
+    const done=new Promise(res=>{rec.onstop=()=>res(new Blob(recChunks,{type:recOpts.mimeType||'audio/webm'}))})
+    rec.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data)}
+    rec.start(250)
+    const hard=setTimeout(()=>{if(hablando){hablando=false;micBtn.classList.remove('rec');pararMic()}},20000)
+    const blob=await done; clearTimeout(hard)
+    if(hablando){hablando=false;micBtn.classList.remove('rec')}
+    await flushAudio(blob)
+  }catch(err){hablando=false;micBtn.classList.remove('rec');addMsg('assistant','mic: '+err.message)}
+})
+micBtn.addEventListener('mouseup',()=>{ if(modo==='ptt'&&hablando){hablando=false;micBtn.classList.remove('rec');pararMic()} })
+micBtn.addEventListener('mouseleave',()=>{ if(modo==='ptt'&&hablando){hablando=false;micBtn.classList.remove('rec');pararMic()} })
+
+// PTT global: Alt+Space alterna iniciar/detener la misma grabación del botón.
+async function toggleGlobalPtt(){
+  if(modo!=='ptt' || offline) return
+  if(hablando){ hablando=false; micBtn.classList.remove('rec'); pararMic(); return }
+  micBtn.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}))
+}
+if(window.hermesNative) window.hermesNative.onGlobalPttToggle(toggleGlobalPtt)
+
+/* ---------- composer ---------- */
+composerText.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviarTexto(composerText.value);composerText.value=''}
+})
+
+/* ---------- init ---------- */
+connectWS(); fetchSessions(); fetchAgentes(); fetchChat(); checkInfra(); renderSesTag()
+setInterval(fetchSessions,8000); setInterval(checkInfra,12000)
+setModo('ptt'); updateTtsToggle() // PTT es el modo seguro por defecto; no abre el mic al iniciar
+hintL.textContent='Push-to-talk · mantén el botón mic para hablar, suelta para enviar'
+hintR.textContent='Enter para enviar · est. infra en el lateral' // PTT visible por defecto; no abre el mic al iniciar.
+</script>
+</body>
+</html>

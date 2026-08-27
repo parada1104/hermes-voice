@@ -1,0 +1,54 @@
+:root {
+  /* ---- Primarios (brand core) ---- */
+  --coral: #ff7676;          /* signature Parrotfy coral */
+  --blue:  #2743b1;          /* deep royal blue */
+  --grad-mid: #b3658c;       /* gradient midpoint (coral -> blue) */
+
+  /* Brand gradient — the diagonal coral->blue used on app icons & accents */
+  --gradient-brand: linear-gradient(135deg, var(--coral) 0%, var(--grad-mid) 50%, var(--blue) 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #ffb0b0 0%, #7385c7 100%); /* @kind color */
+
+  /* ---- Secundarios (soft tints) ---- */
+  --coral-soft:    #f5a4a3;
+  --blue-soft:     #7385c7;
+  --pink-soft:     #ebced0;
+  --lavender:      #bfc4da;
+  --lavender-pale: #f4f4fa;
+
+  /* ---- Neutros ---- */
+  --ink:        #232323;   /* near-black text */
+  --gray:       #808080;   /* mid gray */
+  --gray-light: #dfdfdf;   /* hairline / disabled */
+  --off-white:  #fcf8f7;   /* warm page background */
+  --white:      #ffffff;
+
+  /* ---- Estados (semantic status) ---- */
+  --error:   #e11f20;
+  --success: #2dd25a;
+  --warning: #f8c102;
+  --error-bg:   #fdecec;
+  --success-bg: #e6faed;
+  --warning-bg: #fef6d9;
+
+  /* ---- Semantic aliases ---- */
+  --text-primary:   var(--ink);
+  --text-secondary: var(--gray);
+  --text-muted:     #a3a3a3;
+  --text-inverse:   var(--white);
+  --text-brand:     var(--coral);
+  --text-link:      var(--blue);
+
+  --surface-page:   var(--off-white);
+  --surface-card:   var(--white);
+  --surface-muted:  var(--lavender-pale);
+  --surface-inverse:var(--ink);
+
+  --border:        var(--gray-light);
+  --border-strong: #c9c9c9;
+  --focus-ring:    var(--blue);
+
+  --accent:        var(--coral);
+  --accent-hover:  #ff5f5f;
+  --accent-press:  #f24a4a;
+  --accent-strong: var(--blue);
+}

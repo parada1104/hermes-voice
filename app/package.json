@@ -1,0 +1,12 @@
+{
+  "name": "hermes-voice-app",
+  "version": "0.1.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test ui/lib/*.test.js"
+  },
+  "devDependencies": {
+    "electron": "^43.4.1"
+  }
+}

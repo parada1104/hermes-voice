@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="_ds/parrotfy-design-system-ed2cc2e8-3d73-4fee-882f-b84f301ef241/_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0c0e; }
+  body { font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #d97a3f; text-decoration: none; }
+  a:hover { color: #eb9560; }
+  textarea, button, input { font-family: inherit; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #23272e; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  @keyframes hv-caret { 0%, 45% { opacity: 1 } 50%, 95% { opacity: 0 } 100% { opacity: 1 } }
+  @keyframes hv-spin { to { transform: rotate(360deg) } }
+  @keyframes hv-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(217,122,63,.34), 0 0 18px 0 rgba(217,122,63,.28) } 50% { box-shadow: 0 0 0 7px rgba(217,122,63,0), 0 0 26px 2px rgba(217,122,63,.42) } }
+  @keyframes hv-rise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  @keyframes hv-wave { 0%, 100% { transform: scaleY(.35) } 50% { transform: scaleY(1) } }
+  @keyframes hv-sheen { 0% { transform: translateX(-100%) } 100% { transform: translateX(240%) } }
+</style>
+</helmet>
+
+<div style="--hv-accent: {{ accent }}; --hv-gap: {{ gapPx }}px; min-height: 100vh; background: #0b0c0e; color: #e6e8ec; padding: 40px 44px 96px; box-sizing: border-box">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; max-width: 1320px; margin: 0 auto 28px; padding-bottom: 20px; border-bottom: 1px solid #1b1e24">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #6b7280">Hermes Voice · component kit v2</div>
+      <div style="font: 700 26px/1.15 Inter, sans-serif; letter-spacing: -.015em; color: #f2f4f7">Sistema de UI para asistente de voz + agentes</div>
+      <div style="font: 400 13.5px/1.6 Inter, sans-serif; color: #9aa1ad; max-width: 62ch; text-wrap: pretty">Refinamiento del sistema: micro-interacciones, jerarquía del hilo, estados de mic y escenas. Misma anatomía y paleta — dark #0b0c0e, acento naranja, mono JetBrains.</div>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid #23272e; border-radius: 999px; background: #14161a; font: 500 11.5px/1 'JetBrains Mono', monospace; color: #9aa1ad">6 componentes</div>
+      <div style="display: flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid #23272e; border-radius: 999px; background: #14161a; font: 500 11.5px/1 'JetBrains Mono', monospace; color: #9aa1ad">5 escenas</div>
+    </div>
+  </div>
+
+  <div style="max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px">
+
+    <section style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+        <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--hv-accent, #d97a3f)">01 · ensamblado</div>
+        <div style="font: 500 13px/1 Inter, sans-serif; color: #6b7280">Interactivo — cambia de escena, selecciona sesión, mantén pulsado el mic</div>
+      </div>
+
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        <sc-for list="{{ scenes }}" as="sc" hint-placeholder-count="5">
+          <button onClick="{{ sc.onClick }}" style="appearance: none; cursor: pointer; padding: 7px 13px; border-radius: 999px; font: 500 12px/1 'JetBrains Mono', monospace; letter-spacing: .02em; transition: all 140ms ease-out; background: {{ sc.bg }}; border: 1px solid {{ sc.border }}; color: {{ sc.color }}" style-active="transform: scale(.97)">{{ sc.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="border: 1px solid #23272e; border-radius: 16px; overflow: hidden; background: #0b0c0e; box-shadow: 0 24px 60px -30px rgba(0,0,0,.9)">
+
+        <div style="height: 58px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid #1b1e24; background: #0e1013">
+          <button onClick="{{ toggleSidebar }}" title="Colapsar sesiones" style="appearance: none; cursor: pointer; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #6b7280; transition: all 140ms ease-out" style-hover="background: #1b1e24; color: #e6e8ec" style-active="transform: scale(.94)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
+          </button>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <div style="width: 26px; height: 26px; border-radius: 8px; background: var(--hv-accent, #d97a3f); display: grid; place-items: center; box-shadow: 0 2px 10px -2px rgba(217,122,63,.6)">
+              <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2.2 14.1 9.9 21.8 12 14.1 14.1 12 21.8 9.9 14.1 2.2 12 9.9 9.9Z" fill="#0b0c0e"></path></svg>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 8px">
+              <div style="font: 600 14px/1 Inter, sans-serif; letter-spacing: -.005em; color: #f2f4f7">Hermes Voice</div>
+              <div style="font: 400 12px/1 'JetBrains Mono', monospace; color: #5f6672">codex-lite</div>
+            </div>
+          </div>
+          <div style="flex: 1"></div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px; border: 1px solid {{ pillBorder }}; background: {{ pillBg }}">
+            <sc-if value="{{ isListening }}" hint-placeholder-val="{{ false }}">
+              <span style="width: 7px; height: 7px; border-radius: 999px; background: var(--hv-accent, #d97a3f); animation: hv-glow 2s ease-in-out infinite"></span>
+            </sc-if>
+            <sc-if value="{{ notListening }}" hint-placeholder-val="{{ true }}">
+              <span style="width: 7px; height: 7px; border-radius: 999px; background: {{ pillColor }}"></span>
+            </sc-if>
+            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: {{ pillColor }}">{{ pillText }}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; height: 660px">
+
+          <div style="width: {{ sidebarW }}px; flex: 0 0 auto; overflow: hidden; border-right: 1px solid #1b1e24; background: #0e1013; transition: width 220ms cubic-bezier(.2,.8,.2,1)">
+            <div style="width: 270px; box-sizing: border-box; padding: 14px 12px; display: flex; flex-direction: column; gap: 6px; height: 100%">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 2px 6px 8px">
+                <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; color: #5f6672">SESIONES</div>
+                <button onClick="{{ newSession }}" title="Nueva sesión" style="appearance: none; cursor: pointer; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; border: 1px solid #23272e; background: #14161a; color: #9aa1ad; transition: all 140ms ease-out" style-hover="color: var(--hv-accent, #d97a3f); border-color: #3a3129; background: #1b1e24" style-active="transform: scale(.92)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                </button>
+              </div>
+              <sc-for list="{{ sessions }}" as="s" hint-placeholder-count="4">
+                <div onClick="{{ s.onClick }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; cursor: pointer; transition: background 140ms ease-out, border-color 140ms ease-out; background: {{ s.bg }}; border: 1px solid {{ s.border }}; box-shadow: {{ s.shadow }}" style-hover="background: #1b1e24">
+                  <span style="width: 7px; height: 7px; flex: 0 0 auto; border-radius: 999px; background: {{ s.dot }}; box-shadow: 0 0 0 3px {{ s.dotHalo }}"></span>
+                  <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px/1.3 Inter, sans-serif; color: {{ s.nameColor }}">{{ s.name }}</span>
+                  <span style="flex: 0 0 auto; font: 500 10.5px/1 'JetBrains Mono', monospace; letter-spacing: .04em; padding: 4px 7px; border-radius: 5px; color: {{ s.dot }}; background: {{ s.dotHalo }}">{{ s.badge }}</span>
+                </div>
+              </sc-for>
+              <button onClick="{{ newSession }}" style="appearance: none; cursor: pointer; margin-top: 2px; display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 10px; border: 1px dashed #2a2f37; background: transparent; color: #5f6672; font: 500 12.5px/1 Inter, sans-serif; text-align: left; transition: all 160ms ease-out" style-hover="border-color: var(--hv-accent, #d97a3f); color: #e6e8ec; background: #14161a">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                Nueva sesión
+              </button>
+              <div style="flex: 1"></div>
+              <div style="display: flex; align-items: center; gap: 9px; padding: 10px; border-radius: 10px; background: #101215; border: 1px solid #1b1e24">
+                <span style="width: 6px; height: 6px; border-radius: 999px; background: {{ daemonDot }}"></span>
+                <span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #6b7280">{{ daemonText }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: #0b0c0e">
+
+            <div style="position: relative; flex: 1; min-height: 0">
+              <div style="position: absolute; inset: 0; overflow-y: auto; padding: 26px 34px 20px">
+                <div style="max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--hv-gap, 18px)">
+
+                  <sc-if value="{{ isOffline }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid #4a2624; background: linear-gradient(180deg, #1c1315, #171113); animation: hv-rise 220ms ease-out">
+                      <span style="width: 26px; height: 26px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; background: rgba(229,83,75,.14); color: #e5534b">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"></path><path d="M10.3 3.9 2.6 17.4A2 2 0 0 0 4.3 20.4h15.4a2 2 0 0 0 1.7-3l-7.7-13.5a2 2 0 0 0-3.4 0Z"></path></svg>
+                      </span>
+                      <div style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+                        <div style="font: 600 13px/1.3 Inter, sans-serif; color: #f0c4c1">Daemon local sin conexión</div>
+                        <div style="font: 400 12px/1.4 'JetBrains Mono', monospace; color: #8f7a78">ws://127.0.0.1:8787 · ECONNREFUSED · STT y TTS detenidos</div>
+                      </div>
+                      <button onClick="{{ retry }}" style="appearance: none; cursor: pointer; padding: 8px 14px; border-radius: 999px; border: 1px solid #6b3733; background: rgba(229,83,75,.12); color: #f0a9a4; font: 600 12px/1 Inter, sans-serif; transition: all 140ms ease-out" style-hover="background: rgba(229,83,75,.2); color: #fff" style-active="transform: scale(.97)">Reintentar</button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 76px 0 40px; animation: hv-rise 260ms ease-out">
+                      <div style="width: 46px; height: 46px; border-radius: 14px; border: 1px solid #23272e; background: #14161a; display: grid; place-items: center">
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.2 14.1 9.9 21.8 12 14.1 14.1 12 21.8 9.9 14.1 2.2 12 9.9 9.9Z" fill="#3a3f48"></path></svg>
+                      </div>
+                      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+                        <div style="font: 600 15px/1.3 Inter, sans-serif; color: #c8ccd4">Sin mensajes aún</div>
+                        <div style="font: 400 13px/1.5 Inter, sans-serif; color: #6b7280; text-align: center; max-width: 40ch">Mantén pulsado el micrófono o escribe. Si hace falta, delego en un agente y te lo resumo hablando.</div>
+                      </div>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 560px">
+                        <sc-for list="{{ prompts }}" as="p" hint-placeholder-count="3">
+                          <button onClick="{{ p.onClick }}" style="appearance: none; cursor: pointer; padding: 9px 13px; border-radius: 999px; border: 1px solid #23272e; background: #101215; color: #9aa1ad; font: 400 12px/1 'JetBrains Mono', monospace; transition: all 150ms ease-out" style-hover="border-color: #3a3129; color: #e6e8ec; background: #16181c" style-active="transform: scale(.98)">{{ p.text }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <sc-for list="{{ messages }}" as="m" hint-placeholder-count="4">
+                    <div style="display: flex; flex-direction: column">
+
+                      <sc-if value="{{ m.isDivider }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 2px 0 6px">
+                          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #1e2127)"></span>
+                          <span style="font: 500 11px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: #4d535d">{{ m.text }}</span>
+                          <span style="flex: 1; height: 1px; background: linear-gradient(90deg, #1e2127, transparent)"></span>
+                        </div>
+                      </sc-if>
+
+                      <sc-if value="{{ m.isAssistant }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; gap: 11px; align-items: flex-start; animation: hv-rise 240ms ease-out">
+                          <span style="width: 26px; height: 26px; flex: 0 0 auto; margin-top: 2px; border-radius: 8px; background: #1b1e24; border: 1px solid #262b33; display: grid; place-items: center; font: 600 12px/1 'JetBrains Mono', monospace; color: #9aa1ad">J</span>
+                          <div style="display: flex; flex-direction: column; gap: 6px; max-width: 82%">
+                            <div style="padding: 12px 15px; border-radius: 14px 14px 14px 5px; background: #14161a; border: 1px solid #1e2127; font: 400 14px/1.6 Inter, sans-serif; color: #dfe3e9; text-wrap: pretty; transition: border-color 160ms ease-out" style-hover="border-color: #262b33">{{ m.text }}</div>
+                            <sc-if value="{{ m.speaking }}" hint-placeholder-val="{{ false }}">
+                              <div style="display: flex; align-items: center; gap: 8px; padding-left: 4px">
+                                <span style="display: flex; align-items: flex-end; gap: 2px; height: 12px">
+                                  <span style="width: 2px; height: 12px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out infinite"></span>
+                                  <span style="width: 2px; height: 12px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out .12s infinite"></span>
+                                  <span style="width: 2px; height: 12px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out .24s infinite"></span>
+                                  <span style="width: 2px; height: 12px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out .36s infinite"></span>
+                                </span>
+                                <span style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: #2fbf8f">hablando · mic en mute</span>
+                              </div>
+                            </sc-if>
+                          </div>
+                        </div>
+                      </sc-if>
+
+                      <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; justify-content: flex-end; animation: hv-rise 240ms ease-out">
+                          <div style="max-width: 78%; padding: 12px 15px; border-radius: 14px 14px 5px 14px; background: #17130f; border: 1px solid #3a2b1e; font: 400 14px/1.6 Inter, sans-serif; color: #f0e6dd; text-wrap: pretty; transition: border-color 160ms ease-out" style-hover="border-color: #55402c">{{ m.text }}</div>
+                        </div>
+                      </sc-if>
+
+                      <sc-if value="{{ m.isDeleg }}" hint-placeholder-val="{{ false }}">
+                        <div style="border-radius: 12px; border: 1px solid {{ m.delegBorder }}; background: #101216; overflow: hidden; transition: border-color 160ms ease-out; animation: hv-rise 240ms ease-out" style-hover="border-color: #2c3d55">
+                          <div onClick="{{ m.onToggle }}" style="display: flex; align-items: center; gap: 10px; padding: 11px 13px; cursor: pointer">
+                            <sc-if value="{{ m.running }}" hint-placeholder-val="{{ false }}">
+                              <span style="width: 14px; height: 14px; flex: 0 0 auto; border-radius: 999px; border: 1.75px solid #23303f; border-top-color: #6aa6e8; animation: hv-spin .8s linear infinite"></span>
+                            </sc-if>
+                            <sc-if value="{{ m.done }}" hint-placeholder-val="{{ true }}">
+                              <span style="width: 14px; height: 14px; flex: 0 0 auto; display: grid; place-items: center; color: #6aa6e8">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+                              </span>
+                            </sc-if>
+                            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #6aa6e8">tool</span>
+                            <span style="font: 400 12px/1 'JetBrains Mono', monospace; color: #3f4854">·</span>
+                            <span style="font: 600 12px/1 'JetBrains Mono', monospace; padding: 4px 8px; border-radius: 5px; background: rgba(106,166,232,.1); color: #9cc4ef">{{ m.agent }}</span>
+                            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12.5px/1.3 'JetBrains Mono', monospace; color: #7c8492">→ {{ m.req }}</span>
+                            <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #4d535d">{{ m.ms }}</span>
+                            <span style="width: 18px; height: 18px; display: grid; place-items: center; color: #5f6672; transform: {{ m.caret }}; transition: transform 200ms cubic-bezier(.2,.8,.2,1)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+                            </span>
+                          </div>
+                          <sc-if value="{{ m.open }}" hint-placeholder-val="{{ false }}">
+                            <div style="border-top: 1px solid #1a222c; padding: 13px; display: flex; flex-direction: column; gap: 12px; background: #0d0f13">
+                              <div style="display: flex; flex-direction: column; gap: 6px">
+                                <div style="font: 600 10.5px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: #4d535d">pedido</div>
+                                <div style="font: 400 12.5px/1.65 'JetBrains Mono', monospace; color: #a8b0bd; white-space: pre-wrap">{{ m.req }}</div>
+                              </div>
+                              <div style="display: flex; flex-direction: column; gap: 6px">
+                                <div style="font: 600 10.5px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: #4d535d">resultado</div>
+                                <div style="font: 400 12.5px/1.65 'JetBrains Mono', monospace; color: #c3cad5; white-space: pre-wrap; padding: 11px 12px; border-radius: 9px; background: #0b0d10; border: 1px solid #1a1e24; border-left: 2px solid #6aa6e8">{{ m.res }}</div>
+                              </div>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+
+                    </div>
+                  </sc-for>
+
+                  <sc-if value="{{ showLive }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; justify-content: flex-end; animation: hv-rise 200ms ease-out">
+                      <div style="max-width: 78%; padding: 12px 15px; border-radius: 14px 14px 5px 14px; border: 1px dashed #6b4a2e; background: rgba(217,122,63,.05); font: 400 14px/1.6 Inter, sans-serif; font-style: italic; color: #9aa1ad">{{ partial }}<span style="display: inline-block; margin-left: 2px; color: var(--hv-accent, #d97a3f); animation: hv-caret 1s steps(1) infinite; font-style: normal">▍</span></div>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ isListening }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; align-items: center; padding-right: 4px">
+                      <span style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: var(--hv-accent, #d97a3f)">escuchando</span>
+                      <span style="display: flex; align-items: flex-end; gap: 2px; height: 11px">
+                        <span style="width: 2px; height: 11px; border-radius: 2px; background: var(--hv-accent, #d97a3f); animation: hv-wave .8s ease-in-out infinite"></span>
+                        <span style="width: 2px; height: 11px; border-radius: 2px; background: var(--hv-accent, #d97a3f); animation: hv-wave .8s ease-in-out .1s infinite"></span>
+                        <span style="width: 2px; height: 11px; border-radius: 2px; background: var(--hv-accent, #d97a3f); animation: hv-wave .8s ease-in-out .2s infinite"></span>
+                      </span>
+                    </div>
+                  </sc-if>
+
+                </div>
+              </div>
+              <div style="position: absolute; left: 0; right: 0; top: 0; height: 34px; pointer-events: none; background: linear-gradient(180deg, #0b0c0e, rgba(11,12,14,0))"></div>
+              <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 40px; pointer-events: none; background: linear-gradient(0deg, #0b0c0e, rgba(11,12,14,0))"></div>
+            </div>
+
+            <div style="padding: 0 34px 22px">
+              <div style="max-width: 720px; margin: 0 auto; border-radius: 14px; border: 1px solid {{ composerBorder }}; background: #101215; transition: border-color 180ms ease-out, box-shadow 180ms ease-out; box-shadow: {{ composerShadow }}">
+                <textarea value="{{ draft }}" onChange="{{ onDraft }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" disabled="{{ isOffline }}" placeholder="{{ placeholder }}" rows="2" style="display: block; width: 100%; box-sizing: border-box; resize: none; border: 0; outline: 0; background: transparent; padding: 14px 15px 6px; font: 400 14px/1.6 Inter, sans-serif; color: #e6e8ec"></textarea>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px 10px 12px">
+                  <div style="display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: #0b0d10; border: 1px solid #1b1e24">
+                    <sc-for list="{{ agents }}" as="a" hint-placeholder-count="3">
+                      <button onClick="{{ a.onClick }}" style="appearance: none; cursor: pointer; padding: 6px 11px; border-radius: 999px; border: 0; font: 500 12px/1 'JetBrains Mono', monospace; transition: all 150ms ease-out; background: {{ a.bg }}; color: {{ a.color }}" style-active="transform: scale(.96)">{{ a.name }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="flex: 1"></div>
+                  <button title="Adjuntar" style="appearance: none; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; border: 1px solid transparent; background: transparent; color: #5f6672; transition: all 140ms ease-out" style-hover="color: #e6e8ec; background: #17191e" style-active="transform: scale(.94)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5 8 13a2.8 2.8 0 0 0 4 4l7-7a5 5 0 0 0-7-7l-7.5 7.5a7 7 0 0 0 10 10l3-3"></path></svg>
+                  </button>
+                  <button title="Acciones rápidas" style="appearance: none; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; border: 1px solid transparent; background: transparent; color: #5f6672; transition: all 140ms ease-out" style-hover="color: #e6e8ec; background: #17191e" style-active="transform: scale(.94)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2.5 4.5 13.5H10l-1 8 8.5-11H12l1-8Z"></path></svg>
+                  </button>
+                  <button onMouseDown="{{ pushStart }}" onMouseUp="{{ pushEnd }}" onMouseLeave="{{ pushCancel }}" title="Push to talk" style="appearance: none; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 999px; transition: all 160ms ease-out; border: 1px solid {{ micBorder }}; background: {{ micBg }}; color: {{ micColor }}; animation: {{ micAnim }}" style-active="transform: scale(.94)">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path><path d="M3.5 20.5 20.5 3.5" stroke-width="1.9" style="opacity: {{ muteSlash }}"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <div style="max-width: 720px; margin: 8px auto 0; display: flex; justify-content: space-between; font: 400 11px/1 'JetBrains Mono', monospace; color: #4d535d">
+                <span>{{ hintLeft }}</span>
+                <span>{{ hintRight }}</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+        <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--hv-accent, #d97a3f)">02 · componentes</div>
+        <div style="font: 500 13px/1 Inter, sans-serif; color: #6b7280">Nombre semántico · variantes · reglas de jerarquía</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 18px; align-items: start">
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; overflow: hidden">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid #1b1e24">
+            <div style="font: 500 12.5px/1 'JetBrains Mono', monospace; color: #e6e8ec">header/status</div>
+            <div style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">pill 26px · dot 7px · mono 12</div>
+          </div>
+          <div style="padding: 18px 15px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; gap: 9px; flex-wrap: wrap">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px; border: 1px solid #1e3830; background: rgba(47,191,143,.07)">
+                <span style="width: 7px; height: 7px; border-radius: 999px; background: #2fbf8f"></span>
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #2fbf8f">conectado</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px; border: 1px solid #3a2b1e; background: rgba(217,122,63,.07)">
+                <span style="width: 7px; height: 7px; border-radius: 999px; background: #d97a3f; animation: hv-glow 2s ease-in-out infinite"></span>
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #d97a3f">escuchando</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px; border: 1px solid #4a2624; background: rgba(229,83,75,.07)">
+                <span style="width: 7px; height: 7px; border-radius: 999px; background: #e5534b"></span>
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e5534b">daemon off</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #0b0d10; border: 1px solid #1b1e24">
+              <div style="width: 26px; height: 26px; border-radius: 8px; background: #d97a3f; display: grid; place-items: center">
+                <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2.2 14.1 9.9 21.8 12 14.1 14.1 12 21.8 9.9 14.1 2.2 12 9.9 9.9Z" fill="#0b0c0e"></path></svg>
+              </div>
+              <div style="font: 600 14px/1 Inter, sans-serif; color: #f2f4f7">Hermes Voice</div>
+              <div style="font: 400 12px/1 'JetBrains Mono', monospace; color: #5f6672">codex-lite</div>
+            </div>
+            <div style="font: 400 12px/1.6 Inter, sans-serif; color: #6b7280">El dot es el único elemento animado del header: pulso naranja solo mientras el STT está abierto. Nunca dos estados a la vez.</div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; overflow: hidden">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid #1b1e24">
+            <div style="font: 500 12.5px/1 'JetBrains Mono', monospace; color: #e6e8ec">sidebar/sessions</div>
+            <div style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">row 35px · radius 10 · gap 6</div>
+          </div>
+          <div style="padding: 15px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; border: 1px solid transparent">
+              <span style="width: 7px; height: 7px; border-radius: 999px; background: #6b7280"></span>
+              <span style="flex: 1; font: 500 13px/1.3 Inter, sans-serif; color: #9aa1ad">daemon · realtime WS</span>
+              <span style="font: 500 10.5px/1 'JetBrains Mono', monospace; padding: 4px 7px; border-radius: 5px; color: #6b7280; background: rgba(107,114,128,.12)">idle</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; background: #1b1e24; border: 1px solid #2a2f37; box-shadow: inset 2px 0 0 #d97a3f">
+              <span style="width: 7px; height: 7px; border-radius: 999px; background: #d97a3f; box-shadow: 0 0 0 3px rgba(217,122,63,.16)"></span>
+              <span style="flex: 1; font: 500 13px/1.3 Inter, sans-serif; color: #f2f4f7">hermes-voice · UI kit</span>
+              <span style="font: 500 10.5px/1 'JetBrains Mono', monospace; padding: 4px 7px; border-radius: 5px; color: #d97a3f; background: rgba(217,122,63,.12)">escuchando</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; background: #16181c; border: 1px solid transparent">
+              <span style="width: 7px; height: 7px; border-radius: 999px; background: #2fbf8f; box-shadow: 0 0 0 3px rgba(47,191,143,.14)"></span>
+              <span style="flex: 1; font: 500 13px/1.3 Inter, sans-serif; color: #dfe3e9">tts-qwen · voz clonada</span>
+              <span style="font: 500 10.5px/1 'JetBrains Mono', monospace; padding: 4px 7px; border-radius: 5px; color: #2fbf8f; background: rgba(47,191,143,.12)">hablando</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 10px; border: 1px dashed #2a2f37; color: #5f6672; font: 500 12.5px/1 Inter, sans-serif">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+              Nueva sesión
+            </div>
+            <div style="margin-top: 6px; font: 400 12px/1.6 Inter, sans-serif; color: #6b7280">Activa = fondo #1b1e24 + barra inset 2px acento. Hover = #1b1e24 sin barra. El halo del dot (3px) sustituye cualquier animación en filas inactivas.</div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; overflow: hidden">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid #1b1e24">
+            <div style="font: 500 12.5px/1 'JetBrains Mono', monospace; color: #e6e8ec">chat/msg-user · chat/msg-agent</div>
+            <div style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">14/1.6 · max 78% · radius 14/5</div>
+          </div>
+          <div style="padding: 18px 15px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; justify-content: flex-end">
+              <div style="max-width: 78%; padding: 12px 15px; border-radius: 14px 14px 5px 14px; background: #17130f; border: 1px solid #3a2b1e; font: 400 14px/1.6 Inter, sans-serif; color: #f0e6dd">Cambia el backoff a exponencial con jitter, tope 8 segundos.</div>
+            </div>
+            <div style="display: flex; gap: 11px; align-items: flex-start">
+              <span style="width: 26px; height: 26px; margin-top: 2px; border-radius: 8px; background: #1b1e24; border: 1px solid #262b33; display: grid; place-items: center; font: 600 12px/1 'JetBrains Mono', monospace; color: #9aa1ad">J</span>
+              <div style="max-width: 82%; padding: 12px 15px; border-radius: 14px 14px 14px 5px; background: #14161a; border: 1px solid #1e2127; font: 400 14px/1.6 Inter, sans-serif; color: #dfe3e9">Hecho. Lo aplico y te aviso cuando el daemon reconecte solo.</div>
+            </div>
+            <div style="font: 400 12px/1.6 Inter, sans-serif; color: #6b7280">Jerarquía: la conversación es el nivel 1 (14px, alto contraste). El usuario se distingue por borde cálido, no por relleno saturado — evita que dos burbujas compitan.</div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; overflow: hidden">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid #1b1e24">
+            <div style="font: 500 12.5px/1 'JetBrains Mono', monospace; color: #e6e8ec">chat/transcribe</div>
+            <div style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">dashed 1px · italic · caret ▍ 1s</div>
+          </div>
+          <div style="padding: 18px 15px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; justify-content: flex-end">
+              <div style="max-width: 88%; padding: 12px 15px; border-radius: 14px 14px 5px 14px; border: 1px dashed #6b4a2e; background: rgba(217,122,63,.05); font: italic 400 14px/1.6 Inter, sans-serif; color: #9aa1ad">{{ specPartial }}<span style="display: inline-block; margin-left: 2px; color: #d97a3f; animation: hv-caret 1s steps(1) infinite; font-style: normal">▍</span></div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; align-items: center">
+              <span style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: #d97a3f">escuchando</span>
+              <span style="display: flex; align-items: flex-end; gap: 2px; height: 11px">
+                <span style="width: 2px; height: 11px; border-radius: 2px; background: #d97a3f; animation: hv-wave .8s ease-in-out infinite"></span>
+                <span style="width: 2px; height: 11px; border-radius: 2px; background: #d97a3f; animation: hv-wave .8s ease-in-out .1s infinite"></span>
+                <span style="width: 2px; height: 11px; border-radius: 2px; background: #d97a3f; animation: hv-wave .8s ease-in-out .2s infinite"></span>
+              </span>
+            </div>
+            <div style="font: 400 12px/1.6 Inter, sans-serif; color: #6b7280">Provisional: dashed + itálica + gris. Al cerrar el turno la burbuja pasa a sólida y color pleno en 240ms (misma posición, sin salto) — nunca migra a otro panel.</div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; overflow: hidden; grid-column: span 1">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid #1b1e24">
+            <div style="font: 500 12.5px/1 'JetBrains Mono', monospace; color: #e6e8ec">chat/deleg</div>
+            <div style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">mono 12.5 · radius 12 · azul tools</div>
+          </div>
+          <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px">
+            <div style="border-radius: 12px; border: 1px solid #223142; background: #101216">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 11px 13px">
+                <span style="width: 14px; height: 14px; border-radius: 999px; border: 1.75px solid #23303f; border-top-color: #6aa6e8; animation: hv-spin .8s linear infinite"></span>
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #6aa6e8">tool</span>
+                <span style="font: 600 12px/1 'JetBrains Mono', monospace; padding: 4px 8px; border-radius: 5px; background: rgba(106,166,232,.1); color: #9cc4ef">Hermes</span>
+                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12.5px/1.3 'JetBrains Mono', monospace; color: #7c8492">→ aplicando backoff en daemon/ws.js</span>
+                <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #4d535d">3.1s</span>
+              </div>
+              <div style="height: 2px; background: #1a222c; overflow: hidden; border-radius: 0 0 12px 12px">
+                <div style="width: 34%; height: 2px; background: linear-gradient(90deg, transparent, #6aa6e8, transparent); animation: hv-sheen 1.4s linear infinite"></div>
+              </div>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #1a222c; background: #101216">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 11px 13px">
+                <span style="width: 14px; height: 14px; display: grid; place-items: center; color: #6aa6e8">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12.5 9.5 18 20 6.5"></path></svg>
+                </span>
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #6aa6e8">tool</span>
+                <span style="font: 600 12px/1 'JetBrains Mono', monospace; padding: 4px 8px; border-radius: 5px; background: rgba(106,166,232,.1); color: #9cc4ef">Pi</span>
+                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12.5px/1.3 'JetBrains Mono', monospace; color: #7c8492">→ tests del reconector</span>
+                <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #4d535d">12.4s</span>
+                <span style="color: #5f6672; display: grid; place-items: center; transform: rotate(180deg)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </div>
+              <div style="border-top: 1px solid #1a222c; padding: 13px; display: flex; flex-direction: column; gap: 12px; background: #0d0f13; border-radius: 0 0 12px 12px">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="font: 600 10.5px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: #4d535d">pedido</div>
+                  <div style="font: 400 12.5px/1.65 'JetBrains Mono', monospace; color: #a8b0bd">correr la suite de reconexión y reportar flakes</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="font: 600 10.5px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: #4d535d">resultado</div>
+                  <div style="font: 400 12.5px/1.65 'JetBrains Mono', monospace; color: #c3cad5; padding: 11px 12px; border-radius: 9px; background: #0b0d10; border: 1px solid #1a1e24; border-left: 2px solid #6aa6e8">18 passed · 1 flaky (ws timeout 200ms)<br>sugerencia: subir el timeout a 500ms</div>
+                </div>
+              </div>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #3a2422; background: #100e0f">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 11px 13px">
+                <span style="width: 14px; height: 14px; display: grid; place-items: center; color: #e5534b">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                </span>
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e5534b">tool</span>
+                <span style="font: 600 12px/1 'JetBrains Mono', monospace; padding: 4px 8px; border-radius: 5px; background: rgba(229,83,75,.1); color: #f0a9a4">OpenCode</span>
+                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12.5px/1.3 'JetBrains Mono', monospace; color: #8f7a78">→ sandbox no disponible</span>
+                <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #6b504d">0.4s</span>
+              </div>
+            </div>
+            <div style="font: 400 12px/1.6 Inter, sans-serif; color: #6b7280">Nivel 2: siempre mono, sin avatar, sin burbuja. Solo destaca cuando corre (barra de progreso + spinner); al terminar baja de contraste y colapsa. El resumen hablado vive en el mensaje del agente, no aquí.</div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; overflow: hidden">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid #1b1e24">
+            <div style="font: 500 12.5px/1 'JetBrains Mono', monospace; color: #e6e8ec">composer/mic</div>
+            <div style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">36px · stroke 1.75 · glow 2s</div>
+          </div>
+          <div style="padding: 22px 15px 18px; display: flex; flex-direction: column; gap: 18px">
+            <div style="display: flex; gap: 30px; align-items: flex-start">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1">
+                <div style="width: 36px; height: 36px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #23272e; background: #17191e; color: #9aa1ad">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path></svg>
+                </div>
+                <div style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: #6b7280">idle</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1">
+                <div style="width: 36px; height: 36px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #d97a3f; background: rgba(217,122,63,.16); color: #f0a672; animation: hv-glow 2s ease-in-out infinite">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path></svg>
+                </div>
+                <div style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: #d97a3f">escuchando</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1">
+                <div style="width: 36px; height: 36px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #1b1e24; background: #101215; color: #4d535d">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path><path d="M3.5 20.5 20.5 3.5" stroke-width="1.9"></path></svg>
+                </div>
+                <div style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">mute · TTS</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: #0b0d10; border: 1px solid #1b1e24; align-self: flex-start">
+              <span style="padding: 6px 11px; border-radius: 999px; background: #d97a3f; color: #14100c; font: 500 12px/1 'JetBrains Mono', monospace">Hermes</span>
+              <span style="padding: 6px 11px; border-radius: 999px; color: #6b7280; font: 500 12px/1 'JetBrains Mono', monospace">Pi</span>
+              <span style="padding: 6px 11px; border-radius: 999px; color: #6b7280; font: 500 12px/1 'JetBrains Mono', monospace">OpenCode</span>
+            </div>
+            <div style="font: 400 12px/1.6 Inter, sans-serif; color: #6b7280">Tres estados y ninguno más. El glow es la única luz del composer; mientras el agente habla el mic se apaga y muestra la barra — el estado es honesto, no decorativo.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+        <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--hv-accent, #d97a3f)">03 · especificación</div>
+        <div style="font: 500 13px/1 Inter, sans-serif; color: #6b7280">Tipografía · espaciado · radios · color · motion</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start">
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; padding: 6px 0">
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #14161a">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">display · 26/1.15 · 700 · -1.5%</div>
+            <div style="font: 700 26px/1.15 Inter, sans-serif; letter-spacing: -.015em; color: #f2f4f7">Hermes Voice</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #14161a">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">title · 18/1.3 · 600</div>
+            <div style="font: 600 18px/1.3 Inter, sans-serif; color: #eceff4">Sesión activa</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #14161a">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">body · 14/1.6 · 400</div>
+            <div style="font: 400 14px/1.6 Inter, sans-serif; color: #dfe3e9">Texto de mensaje: el único tamaño de lectura del hilo.</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #14161a">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">ui · 13/1.3 · 500</div>
+            <div style="font: 500 13px/1.3 Inter, sans-serif; color: #dfe3e9">Nombre de sesión · placeholder</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #14161a">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">meta · mono 12 · 500</div>
+            <div style="font: 500 12px/1 'JetBrains Mono', monospace; color: #9aa1ad">status · agente · timing</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #14161a">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">label · mono 11 · 600 · +14%</div>
+            <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; color: #5f6672">SESIONES</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 18px">
+            <div style="width: 168px; flex: 0 0 auto; font: 400 11.5px/1.4 'JetBrains Mono', monospace; color: #5f6672">payload · mono 12.5/1.65</div>
+            <div style="font: 400 12.5px/1.65 'JetBrains Mono', monospace; color: #a8b0bd">daemon/ws.js · backoff 250ms→8s</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 18px">
+
+          <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+            <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #5f6672">espaciado · base 4</div>
+            <div style="display: flex; flex-direction: column; gap: 7px">
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 34px; font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">4</span><span style="height: 8px; width: 4px; background: #2a2f37; border-radius: 2px"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">icon gap</span></div>
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 34px; font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">6</span><span style="height: 8px; width: 6px; background: #2a2f37; border-radius: 2px"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">filas sidebar</span></div>
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 34px; font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">10</span><span style="height: 8px; width: 10px; background: #2a2f37; border-radius: 2px"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">dot→label</span></div>
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 34px; font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">15</span><span style="height: 8px; width: 15px; background: #2a2f37; border-radius: 2px"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">padding burbuja</span></div>
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 34px; font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">18</span><span style="height: 8px; width: 18px; background: var(--hv-accent, #d97a3f); border-radius: 2px"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">gap entre turnos</span></div>
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 34px; font: 400 11.5px/1 'JetBrains Mono', monospace; color: #5f6672">34</span><span style="height: 8px; width: 34px; background: #2a2f37; border-radius: 2px"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #4d535d">margen del hilo</span></div>
+            </div>
+          </div>
+
+          <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+            <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #5f6672">radios</div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 42px; height: 32px; background: #17191e; border: 1px solid #23272e; border-radius: 5px"></span><span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #5f6672">5 chip</span></div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 42px; height: 32px; background: #17191e; border: 1px solid #23272e; border-radius: 9px"></span><span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #5f6672">9 btn</span></div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 42px; height: 32px; background: #17191e; border: 1px solid #23272e; border-radius: 10px"></span><span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #5f6672">10 fila</span></div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 42px; height: 32px; background: #17191e; border: 1px solid #23272e; border-radius: 12px"></span><span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #5f6672">12 tool</span></div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 42px; height: 32px; background: #17191e; border: 1px solid #23272e; border-radius: 14px 14px 5px 14px"></span><span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #5f6672">14/5 msg</span></div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 42px; height: 32px; background: #17191e; border: 1px solid #23272e; border-radius: 999px"></span><span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #5f6672">pill</span></div>
+            </div>
+          </div>
+
+          <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+            <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #5f6672">color</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px">
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #0b0c0e; border: 1px solid #23272e"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#0b0c0e bg</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #14161a"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#14161a surf-1</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #1b1e24"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#1b1e24 surf-2</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #23272e"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#23272e línea</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: var(--hv-accent, #d97a3f)"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">acento voz</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #2fbf8f"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#2fbf8f ok/TTS</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #6aa6e8"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#6aa6e8 tools</span></div>
+              <div style="display: flex; align-items: center; gap: 9px"><span style="width: 20px; height: 20px; border-radius: 6px; background: #e5534b"></span><span style="font: 400 11.5px/1 'JetBrains Mono', monospace; color: #7c8492">#e5534b error</span></div>
+            </div>
+          </div>
+
+          <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0e1013; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+            <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #5f6672">motion</div>
+            <div style="display: flex; flex-direction: column; gap: 7px; font: 400 11.5px/1.5 'JetBrains Mono', monospace; color: #7c8492">
+              <div>hover 140ms ease-out · press scale .96 / 120ms</div>
+              <div>entrada de mensaje: rise 6px + fade 240ms</div>
+              <div>expandir tool: 200ms cubic-bezier(.2,.8,.2,1)</div>
+              <div>sidebar: width 220ms · glow mic: 2s loop</div>
+              <div>caret 1s steps(1) · onda 0.8s stagger 100ms</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+        <div style="font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--hv-accent, #d97a3f)">04 · escenas</div>
+        <div style="font: 500 13px/1 Inter, sans-serif; color: #6b7280">Fragmento de hilo + composer por estado</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start">
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0b0c0e; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #14161a; background: #0e1013">
+            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e6e8ec">idle</span>
+            <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #4d535d">mic libre</span>
+          </div>
+          <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; gap: 9px; align-items: flex-start">
+              <span style="width: 22px; height: 22px; border-radius: 7px; background: #1b1e24; border: 1px solid #262b33; display: grid; place-items: center; font: 600 11px/1 'JetBrains Mono', monospace; color: #9aa1ad">J</span>
+              <div style="padding: 10px 13px; border-radius: 12px 12px 12px 5px; background: #14161a; border: 1px solid #1e2127; font: 400 13px/1.55 Inter, sans-serif; color: #dfe3e9">Listo cuando quieras.</div>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #1b1e24; background: #101215; padding: 10px 11px; display: flex; align-items: center; gap: 9px">
+              <span style="flex: 1; font: 400 12.5px/1 Inter, sans-serif; color: #4d535d">Habla o escribe…</span>
+              <span style="width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #23272e; background: #17191e; color: #9aa1ad">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0b0c0e; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #14161a; background: #0e1013">
+            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e6e8ec">escuchando</span>
+            <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #d97a3f">STT abierto</span>
+          </div>
+          <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; justify-content: flex-end; gap: 7px; align-items: center">
+              <span style="font: 500 11px/1 'JetBrains Mono', monospace; color: #d97a3f">escuchando</span>
+              <span style="display: flex; align-items: flex-end; gap: 2px; height: 10px">
+                <span style="width: 2px; height: 10px; border-radius: 2px; background: #d97a3f; animation: hv-wave .8s ease-in-out infinite"></span>
+                <span style="width: 2px; height: 10px; border-radius: 2px; background: #d97a3f; animation: hv-wave .8s ease-in-out .1s infinite"></span>
+                <span style="width: 2px; height: 10px; border-radius: 2px; background: #d97a3f; animation: hv-wave .8s ease-in-out .2s infinite"></span>
+              </span>
+            </div>
+            <div style="display: flex; justify-content: flex-end">
+              <div style="padding: 10px 13px; border-radius: 12px 12px 5px 12px; border: 1px dashed #6b4a2e; background: rgba(217,122,63,.05); font: italic 400 13px/1.55 Inter, sans-serif; color: #9aa1ad"><span style="color: #d97a3f; animation: hv-caret 1s steps(1) infinite; font-style: normal">▍</span></div>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #3a2b1e; background: #101215; padding: 10px 11px; display: flex; align-items: center; gap: 9px; box-shadow: 0 0 24px -8px rgba(217,122,63,.4)">
+              <span style="flex: 1; font: 400 12.5px/1 Inter, sans-serif; color: #4d535d">Escuchando…</span>
+              <span style="width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #d97a3f; background: rgba(217,122,63,.16); color: #f0a672; animation: hv-glow 2s ease-in-out infinite">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0b0c0e; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #14161a; background: #0e1013">
+            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e6e8ec">transcribiendo</span>
+            <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #4d535d">parcial · whisper</span>
+          </div>
+          <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; justify-content: flex-end">
+              <div style="max-width: 92%; padding: 10px 13px; border-radius: 12px 12px 5px 12px; border: 1px dashed #6b4a2e; background: rgba(217,122,63,.05); font: italic 400 13px/1.55 Inter, sans-serif; color: #9aa1ad">{{ specPartial }}<span style="color: #d97a3f; animation: hv-caret 1s steps(1) infinite; font-style: normal">▍</span></div>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #3a2b1e; background: #101215; padding: 10px 11px; display: flex; align-items: center; gap: 9px">
+              <span style="flex: 1; font: 400 12px/1 'JetBrains Mono', monospace; color: #6b7280">parcial · 0.4s</span>
+              <span style="width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #d97a3f; background: rgba(217,122,63,.16); color: #f0a672">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0b0c0e; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #14161a; background: #0e1013">
+            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e6e8ec">hablando + tool</span>
+            <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #2fbf8f">TTS · mic mute</span>
+          </div>
+          <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px">
+            <div style="border-radius: 11px; border: 1px solid #223142; background: #101216; padding: 9px 11px; display: flex; align-items: center; gap: 8px">
+              <span style="width: 12px; height: 12px; border-radius: 999px; border: 1.6px solid #23303f; border-top-color: #6aa6e8; animation: hv-spin .8s linear infinite"></span>
+              <span style="font: 500 11.5px/1 'JetBrains Mono', monospace; color: #6aa6e8">tool</span>
+              <span style="font: 600 11.5px/1 'JetBrains Mono', monospace; padding: 3px 7px; border-radius: 5px; background: rgba(106,166,232,.1); color: #9cc4ef">Hermes</span>
+              <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 11.5px/1.3 'JetBrains Mono', monospace; color: #7c8492">→ parchando ws.js</span>
+            </div>
+            <div style="display: flex; gap: 9px; align-items: flex-start">
+              <span style="width: 22px; height: 22px; border-radius: 7px; background: #1b1e24; border: 1px solid #262b33; display: grid; place-items: center; font: 600 11px/1 'JetBrains Mono', monospace; color: #9aa1ad">J</span>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div style="padding: 10px 13px; border-radius: 12px 12px 12px 5px; background: #14161a; border: 1px solid #1e2127; font: 400 13px/1.55 Inter, sans-serif; color: #dfe3e9">Voy con el backoff; te resumo al terminar.</div>
+                <div style="display: flex; align-items: center; gap: 7px; padding-left: 3px">
+                  <span style="display: flex; align-items: flex-end; gap: 2px; height: 10px">
+                    <span style="width: 2px; height: 10px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out infinite"></span>
+                    <span style="width: 2px; height: 10px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out .12s infinite"></span>
+                    <span style="width: 2px; height: 10px; border-radius: 2px; background: #2fbf8f; animation: hv-wave .9s ease-in-out .24s infinite"></span>
+                  </span>
+                  <span style="font: 500 11px/1 'JetBrains Mono', monospace; color: #2fbf8f">hablando</span>
+                </div>
+              </div>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #1b1e24; background: #101215; padding: 10px 11px; display: flex; align-items: center; gap: 9px; opacity: .7">
+              <span style="flex: 1; font: 400 12px/1 'JetBrains Mono', monospace; color: #4d535d">mic en mute mientras habla</span>
+              <span style="width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #1b1e24; background: #101215; color: #4d535d">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path><path d="M3.5 20.5 20.5 3.5" stroke-width="1.9"></path></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #1b1e24; border-radius: 14px; background: #0b0c0e; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #14161a; background: #0e1013">
+            <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: #e6e8ec">daemon off</span>
+            <span style="font: 400 11px/1 'JetBrains Mono', monospace; color: #e5534b">ECONNREFUSED</span>
+          </div>
+          <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; border: 1px solid #4a2624; background: #17111350">
+              <span style="width: 22px; height: 22px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 7px; background: rgba(229,83,75,.14); color: #e5534b">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"></path><path d="M10.3 3.9 2.6 17.4A2 2 0 0 0 4.3 20.4h15.4a2 2 0 0 0 1.7-3l-7.7-13.5a2 2 0 0 0-3.4 0Z"></path></svg>
+              </span>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+                <span style="font: 600 12.5px/1.3 Inter, sans-serif; color: #f0c4c1">Daemon sin conexión</span>
+                <span style="font: 400 11px/1.4 'JetBrains Mono', monospace; color: #8f7a78">STT y TTS detenidos</span>
+              </div>
+              <span style="padding: 7px 12px; border-radius: 999px; border: 1px solid #6b3733; background: rgba(229,83,75,.12); color: #f0a9a4; font: 600 11.5px/1 Inter, sans-serif">Reintentar</span>
+            </div>
+            <div style="border-radius: 12px; border: 1px solid #1b1e24; background: #0e1013; padding: 10px 11px; display: flex; align-items: center; gap: 9px; opacity: .55">
+              <span style="flex: 1; font: 400 12px/1 'JetBrains Mono', monospace; color: #4d535d">composer deshabilitado</span>
+              <span style="width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; border: 1px solid #1b1e24; background: #101215; color: #3f4854">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="10.2" rx="3"></rect><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0"></path><path d="M12 17.6V21"></path><path d="M8.6 21h6.8"></path><path d="M3.5 20.5 20.5 3.5" stroke-width="1.9"></path></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#d97a3f&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#d97a3f&quot;,&quot;#e0653a&quot;,&quot;#c98a4b&quot;,&quot;#6aa6e8&quot;],&quot;section&quot;:&quot;Marca&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Cómodo&quot;,&quot;options&quot;:[&quot;Cómodo&quot;,&quot;Compacto&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hilo&quot;}}">
+const PHRASE = 'revisa el reconector del websocket cuando el daemon se cae';
+
+class Component extends DCLogic {
+  state = {
+    scene: 'idle',
+    sidebarOpen: true,
+    activeId: 's2',
+    agent: 'Hermes',
+    draft: '',
+    focused: false,
+    partialLen: 0,
+    specLen: 0,
+    seq: 0,
+    sessions: [
+      { id: 's1', name: 'daemon · realtime WS', status: 'idle' },
+      { id: 's2', name: 'hermes-voice · UI kit', status: 'listening' },
+      { id: 's3', name: 'tts-qwen · voz clonada', status: 'speaking' },
+      { id: 's4', name: 'opencode · sandbox', status: 'idle' }
+    ],
+    messages: [
+      { id: 'd0', kind: 'divider', text: 'Hoy' },
+      { id: 'm1', kind: 'assistant', text: 'Daemon arriba y voz cargada. Dime qué revisamos.' },
+      { id: 'm2', kind: 'user', text: 'El daemon se cae y la app no reconecta. Míralo.' },
+      { id: 'm3', kind: 'deleg', agent: 'Hermes', status: 'done', ms: '12.4s', open: false,
+        req: 'revisar reconexión del WebSocket en daemon/ws.js y proponer backoff exponencial',
+        res: 'backoff 250ms→8s con jitter ±20%, 6 intentos\nheartbeat cada 15s, cierre limpio en beforeExit' },
+      { id: 'm4', kind: 'assistant', text: 'Hermes puso backoff exponencial con jitter y tope de 8 s, más heartbeat cada 15 s. Reconecta solo en menos de un segundo.' }
+    ]
+  };
+
+  componentDidMount() {
+    this.t = setInterval(() => {
+      this.setState(s => {
+        const next = { specLen: s.specLen >= PHRASE.length + 14 ? 0 : s.specLen + 1 };
+        if (s.scene === 'transcribing') next.partialLen = Math.min(PHRASE.length, s.partialLen + 1);
+        return next;
+      });
+    }, 55);
+  }
+  componentWillUnmount() { clearInterval(this.t); if (this.tt) clearTimeout(this.tt); }
+
+  setScene = (scene) => () => this.setState({ scene, partialLen: scene === 'transcribing' ? 0 : 0 });
+  toggleSidebar = () => this.setState(s => ({ sidebarOpen: !s.sidebarOpen }));
+  selectSession = (id) => () => this.setState(s => ({
+    activeId: id,
+    scene: (s.sessions.find(x => x.id === id) || {}).status === 'speaking' ? 'speaking' : 'idle'
+  }));
+  newSession = () => this.setState(s => {
+    const id = 'n' + (s.seq + 1);
+    return {
+      seq: s.seq + 1,
+      activeId: id,
+      scene: 'idle',
+      messages: [],
+      sessions: s.sessions.concat([{ id, name: 'sesión nueva · sin título', status: 'idle' }])
+    };
+  });
+  setAgent = (agent) => () => this.setState({ agent });
+  onDraft = (e) => this.setState({ draft: e.target.value });
+  toggleDeleg = (id) => () => this.setState(s => ({
+    messages: s.messages.map(m => m.id === id ? Object.assign({}, m, { open: !m.open }) : m)
+  }));
+  usePrompt = (text) => () => this.setState({ draft: text });
+  retry = () => this.setState({ scene: 'idle' });
+
+  pushStart = () => { if (this.state.scene !== 'offline') this.setState({ scene: 'transcribing', partialLen: 0 }); };
+  pushCancel = () => { if (this.state.scene === 'transcribing') this.setState({ scene: 'idle', partialLen: 0 }); };
+  pushEnd = () => {
+    if (this.state.scene !== 'transcribing') return;
+    const said = PHRASE.slice(0, Math.max(12, this.state.partialLen));
+    const n = Date.now();
+    this.setState(s => ({
+      scene: 'speaking',
+      partialLen: 0,
+      messages: s.messages.concat([
+        { id: 'u' + n, kind: 'user', text: said },
+        { id: 'g' + n, kind: 'deleg', agent: s.agent, status: 'running', ms: '…', open: false,
+          req: said, res: '' }
+      ])
+    }));
+    this.tt = setTimeout(() => this.setState(s => ({
+      scene: 'idle',
+      messages: s.messages.map(m => m.id === 'g' + n
+        ? Object.assign({}, m, { status: 'done', ms: '4.8s', res: 'reconector revisado · backoff aplicado' })
+        : m).concat([{ id: 'a' + n, kind: 'assistant', text: 'Listo, ' + s.agent + ' lo revisó y ya reconecta con backoff. Te dejo el diff en el hilo.' }])
+    })), 2600);
+  };
+
+  renderVals() {
+    const st = this.state;
+    const accent = this.props.accent || '#d97a3f';
+    const sceneLabels = [['idle', 'idle'], ['listening', 'escuchando'], ['transcribing', 'transcribiendo'], ['speaking', 'hablando'], ['offline', 'daemon off']];
+    const dotFor = s => s === 'listening' ? accent : s === 'speaking' ? '#2fbf8f' : '#6b7280';
+    const haloFor = s => s === 'listening' ? 'rgba(217,122,63,.16)' : s === 'speaking' ? 'rgba(47,191,143,.14)' : 'rgba(107,114,128,.12)';
+    const badgeFor = s => s === 'listening' ? 'escuchando' : s === 'speaking' ? 'hablando' : 'idle';
+
+    const isListening = st.scene === 'listening';
+    const isTranscribing = st.scene === 'transcribing';
+    const isSpeaking = st.scene === 'speaking';
+    const isOffline = st.scene === 'offline';
+
+    const pill = isOffline ? ['daemon off', '#e5534b', 'rgba(229,83,75,.07)', '#4a2624']
+      : isListening || isTranscribing ? ['escuchando', accent, 'rgba(217,122,63,.07)', '#3a2b1e']
+      : isSpeaking ? ['hablando', '#2fbf8f', 'rgba(47,191,143,.07)', '#1e3830']
+      : ['conectado', '#2fbf8f', 'rgba(47,191,143,.06)', '#1e3830'];
+
+    const micActive = isListening || isTranscribing;
+    const muted = isSpeaking || isOffline;
+
+    return {
+      accent,
+      gapPx: this.props.density === 'Compacto' ? 13 : 18,
+      sidebarW: st.sidebarOpen ? 270 : 0,
+      toggleSidebar: this.toggleSidebar,
+      newSession: this.newSession,
+      retry: this.retry,
+      onDraft: this.onDraft,
+      draft: st.draft,
+      onFocus: () => this.setState({ focused: true }),
+      onBlur: () => this.setState({ focused: false }),
+      placeholder: isOffline ? 'Daemon sin conexión…' : isSpeaking ? 'Hermes está hablando…' : 'Habla o escribe. Delego si hace falta.',
+      composerBorder: isOffline ? '#2a1e1e' : st.focused ? '#3a2b1e' : micActive ? '#3a2b1e' : '#1b1e24',
+      composerShadow: micActive ? '0 0 30px -10px rgba(217,122,63,.45)' : 'none',
+      hintLeft: 'espacio = push-to-talk · ⏎ enviar',
+      hintRight: st.agent + ' · sesión ' + (st.sessions.find(s => s.id === st.activeId) || { name: '—' }).name,
+
+      scenes: sceneLabels.map(([id, label]) => ({
+        label, onClick: this.setScene(id),
+        bg: st.scene === id ? 'rgba(217,122,63,.12)' : '#101215',
+        border: st.scene === id ? '#5c4229' : '#1b1e24',
+        color: st.scene === id ? '#f0a672' : '#6b7280'
+      })),
+
+      sessions: st.sessions.map(s => {
+        const active = s.id === st.activeId;
+        const status = active ? (isListening || isTranscribing ? 'listening' : isSpeaking ? 'speaking' : 'idle') : s.status;
+        return {
+          name: s.name, badge: badgeFor(status), dot: dotFor(status), dotHalo: haloFor(status),
+          bg: active ? '#1b1e24' : 'transparent',
+          border: active ? '#2a2f37' : 'transparent',
+          shadow: active ? 'inset 2px 0 0 ' + accent : 'none',
+          nameColor: active ? '#f2f4f7' : '#9aa1ad',
+          onClick: this.selectSession(s.id)
+        };
+      }),
+
+      agents: ['Hermes', 'Pi', 'OpenCode'].map(name => ({
+        name, onClick: this.setAgent(name),
+        bg: st.agent === name ? accent : 'transparent',
+        color: st.agent === name ? '#14100c' : '#6b7280'
+      })),
+
+      messages: st.messages.map(m => ({
+        text: m.text, agent: m.agent, req: m.req, res: m.res, ms: m.ms, open: !!m.open,
+        isDivider: m.kind === 'divider',
+        isUser: m.kind === 'user',
+        isAssistant: m.kind === 'assistant',
+        isDeleg: m.kind === 'deleg',
+        speaking: m.kind === 'assistant' && isSpeaking && m.id === st.messages[st.messages.length - 1].id,
+        running: m.status === 'running',
+        done: m.status === 'done',
+        delegBorder: m.status === 'running' ? '#223142' : '#1a222c',
+        caret: m.open ? 'rotate(180deg)' : 'none',
+        onToggle: this.toggleDeleg(m.id)
+      })),
+
+      isEmpty: st.messages.length === 0 && !isOffline,
+      prompts: [
+        'Hermes, refactoriza el daemon',
+        '¿Por qué falla el TTS?',
+        'Pi, corre los tests'
+      ].map(text => ({ text, onClick: this.usePrompt(text) })),
+
+      isListening, isOffline,
+      notListening: !isListening,
+      showLive: isTranscribing,
+      partial: PHRASE.slice(0, st.partialLen),
+      specPartial: PHRASE.slice(0, Math.min(PHRASE.length, st.specLen)),
+      isMuted: muted,
+      muteSlash: muted ? 1 : 0,
+      micBorder: micActive ? accent : muted ? '#1b1e24' : '#23272e',
+      micBg: micActive ? 'rgba(217,122,63,.16)' : muted ? '#101215' : '#17191e',
+      micColor: micActive ? '#f0a672' : muted ? '#4d535d' : '#9aa1ad',
+      micAnim: isListening || isTranscribing ? 'hv-glow 2s ease-in-out infinite' : 'none',
+      pillText: pill[0], pillColor: pill[1], pillBg: pill[2], pillBorder: pill[3],
+      daemonDot: isOffline ? '#e5534b' : '#2fbf8f',
+      daemonText: isOffline ? 'daemon off · ws 8787' : 'daemon ok · ws 8787',
+      pushStart: this.pushStart, pushEnd: this.pushEnd, pushCancel: this.pushCancel
+    };
+  }
+}
+</script>
+</body>
+</html>

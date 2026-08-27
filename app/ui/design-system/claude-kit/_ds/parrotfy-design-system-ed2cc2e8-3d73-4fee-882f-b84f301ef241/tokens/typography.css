@@ -1,0 +1,81 @@
+:root {
+  /* ---- Families ---- */
+  --font-sans: 'Ubuntu', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Ubuntu Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* ---- Weights ---- */
+  --fw-light:    300; /* @kind font */
+  --fw-regular:  400; /* @kind font */
+  --fw-medium:   500; /* @kind font */
+  --fw-bold:     700; /* @kind font */
+
+  /* ---- Type scale (Parrotfy Guía de estilo — exact spec) ----
+     Each step: font-size / line-height / letter-spacing.
+     Kerning % from the guide is converted to em (2% -> 0.02em).
+     All type-scale tokens are font-kind. */
+  --h1-size: 70px; /* @kind font */
+  --h1-lh: 1.35;   /* @kind font */
+  --h1-ls: 0;      /* @kind font */
+  --h1-weight: var(--fw-bold);   /* @kind font */
+  --h2-size: 58px; /* @kind font */
+  --h2-lh: 1.30;   /* @kind font */
+  --h2-ls: 0;      /* @kind font */
+  --h2-weight: var(--fw-bold);   /* @kind font */
+  --h3-size: 46px; /* @kind font */
+  --h3-lh: 1.30;   /* @kind font */
+  --h3-ls: 0;      /* @kind font */
+  --h3-weight: var(--fw-bold);   /* @kind font */
+  --h4-size: 32px; /* @kind font */
+  --h4-lh: 1.35;   /* @kind font */
+  --h4-ls: 0.02em; /* @kind font */
+  --h4-weight: var(--fw-medium); /* @kind font */
+  --h5-size: 22px; /* @kind font */
+  --h5-lh: 1.35;   /* @kind font */
+  --h5-ls: 0.02em; /* @kind font */
+  --h5-weight: var(--fw-medium); /* @kind font */
+  --h6-size: 18px; /* @kind font */
+  --h6-lh: 1.35;   /* @kind font */
+  --h6-ls: 0.04em; /* @kind font */
+  --h6-weight: var(--fw-medium); /* @kind font */
+
+  --subtitle1-size: 14px;   /* @kind font */
+  --subtitle1-lh: 1.35;     /* @kind font */
+  --subtitle1-ls: 0.04em;   /* @kind font */
+  --subtitle1-weight: var(--fw-medium); /* @kind font */
+  --subtitle2-size: 14px;   /* @kind font */
+  --subtitle2-lh: 1.35;     /* @kind font */
+  --subtitle2-ls: 0.06em;   /* @kind font */
+  --subtitle2-weight: var(--fw-regular); /* @kind font */
+
+  --body-size:  12px;   /* @kind font */
+  --body-lh:  1.50;     /* @kind font */
+  --body-ls:  0.04em;   /* @kind font */
+  --body-weight:  var(--fw-regular); /* @kind font */
+  --body2-size: 12px;   /* @kind font */
+  --body2-lh: 1.55;     /* @kind font */
+  --body2-ls: 0.05em;   /* @kind font */
+  --body2-weight: var(--fw-medium);  /* @kind font */
+
+  --button-size: 10px;  /* @kind font */
+  --button-lh: 1.2;     /* @kind font */
+  --button-ls: 0.10em;  /* @kind font */
+  --button-weight: var(--fw-bold); /* @kind font */
+  --detail-size: 10px;  /* @kind font */
+  --detail-lh: 1.35;    /* @kind font */
+  --detail-ls: 0.06em;  /* @kind font */
+  --detail-weight: var(--fw-bold); /* @kind font */
+}
+
+/* ---- Optional utility classes mirroring the scale ---- */
+.p-h1 { font: var(--h1-weight) var(--h1-size)/var(--h1-lh) var(--font-sans); letter-spacing: var(--h1-ls); }
+.p-h2 { font: var(--h2-weight) var(--h2-size)/var(--h2-lh) var(--font-sans); letter-spacing: var(--h2-ls); }
+.p-h3 { font: var(--h3-weight) var(--h3-size)/var(--h3-lh) var(--font-sans); letter-spacing: var(--h3-ls); }
+.p-h4 { font: var(--h4-weight) var(--h4-size)/var(--h4-lh) var(--font-sans); letter-spacing: var(--h4-ls); }
+.p-h5 { font: var(--h5-weight) var(--h5-size)/var(--h5-lh) var(--font-sans); letter-spacing: var(--h5-ls); }
+.p-h6 { font: var(--h6-weight) var(--h6-size)/var(--h6-lh) var(--font-sans); letter-spacing: var(--h6-ls); text-transform: uppercase; }
+.p-subtitle1 { font: var(--subtitle1-weight) var(--subtitle1-size)/var(--subtitle1-lh) var(--font-sans); letter-spacing: var(--subtitle1-ls); }
+.p-subtitle2 { font: var(--subtitle2-weight) var(--subtitle2-size)/var(--subtitle2-lh) var(--font-sans); letter-spacing: var(--subtitle2-ls); }
+.p-body  { font: var(--body-weight) var(--body-size)/var(--body-lh) var(--font-sans); letter-spacing: var(--body-ls); }
+.p-body2 { font: var(--body2-weight) var(--body2-size)/var(--body2-lh) var(--font-sans); letter-spacing: var(--body2-ls); }
+.p-button { font: var(--button-weight) var(--button-size)/var(--button-lh) var(--font-sans); letter-spacing: var(--button-ls); text-transform: uppercase; }
+.p-detail { font: var(--detail-weight) var(--detail-size)/var(--detail-lh) var(--font-sans); letter-spacing: var(--detail-ls); }
