@@ -1,0 +1,361 @@
+/**
+ * Hermes Voice — Daemon conector (portable) · multi-sesión
+ *
+ * Servicio local que conecta la UI (app) con un harness (Hermes voice)
+ * mediante:
+ *  1. Un PTY que corre el harness con TUI (Hermes voice) — los "tabs" del
+ *     proyecto son terminales reales por debajo (modelo Orca).
+ *  2. Un THREAD propio por SESIÓN (mensajes), poseído aquí, no en sesiones
+ *     de Hermes. Cada sesión = {id, agente, thread, estado}.
+ *  3. La capa de voz: STT (oMLX), capa conversacional (Cerebras), TTS (oMLX)
+ *     y la decisión "responder vs delegar" en CÓDIGO (no en el prompt).
+ *  4. Una API local (WebSocket/HTTP) para que la app hable con él.
+ *
+ * Portable: puede apuntar a otros harness (Claude Code, Pi) con la misma capa.
+ *
+ * R2 (sesiones): mapa `sesiones` por id, cada una con su thread y agente.
+ * R3 (agente): el agente se elige por sesión (`sesion.agente`), no global.
+ * Live: `bus` (EventEmitter) emite fases/transcripción para el WS del server.
+ */
+
+const { spawn } = require('child_process')
+const { EventEmitter } = require('events')
+
+/* ── Config ── */
+const HERMES_PROFILE = process.env.HV_HERMES_PROFILE || 'voice'
+const HERMES_BIN = process.env.HV_HERMES_BIN || '~/.local/bin/hermes'   // wrapper
+const HERMES_SESSION = process.env.HV_HERMES_SESSION || 'Bot Chat'
+const OMLX_BASE = 'http://127.0.0.1:8000'
+const OMLX_STT_MODEL = process.env.HV_STT_MODEL || 'whisper-large-v3-turbo'
+const OMLX_TTS_MODEL = process.env.HV_TTS_MODEL || 'mlx-community--Qwen3-TTS-12Hz-1.7B-Base-8bit'
+const CEREBRAS_URL = 'https://api.cerebras.ai/v1/chat/completions'
+const CEREBRAS_KEY = process.env.CEREBRAS_API_KEY
+const CEREBRAS_MODEL = 'gemma-4-31b'
+
+const VOICE_PROMPT = `Eres la interfaz de voz de Robert (JARVIS). Respuestas de 1-3 oraciones, en español, al "señor". Sin markdown.
+Decide si RESPONDES o DELEGAS: si es conversacional/sobre ti → responde; si requiere ver/operar (pantalla, archivos, sistemas, proyectos) → DELEGA.
+Para delegar usa la función delegate_to_agent con el pedido exacto. Tras delegar di "Lo consulto ahora, señor."`
+
+/* ── Eventos en vivo (para WS) ── */
+const bus = new EventEmitter()
+function emitir(tipo, payload) {
+  bus.emit(tipo, payload)
+  bus.emit('*', { tipo, payload })
+}
+
+/* ── Estado: SESIONES (R1 multi-sesión) ── */
+const AGENTES_DISPONIBLES = ['hermes', 'pi', 'orca']
+
+function nuevaSesion(id, agente = process.env.HV_AGENTE_SELECCIONADO || 'hermes') {
+  if (!id) id = `s-${Date.now()}`
+  return {
+    id,
+    agente: AGENTES_DISPONIBLES.includes(agente) ? agente : 'hermes',
+    thread: [],            // {role, text, ts}
+    estado: 'idle',        // idle | escuchando | transcribiendo | hablando | daemon-off
+    creada: Date.now(),
+    ultimoTurno: null,
+  }
+}
+
+const sesiones = new Map()
+sesiones.set('default', nuevaSesion('default'))
+
+function getSesion(id) {
+  if (!id) id = 'default'
+  if (!sesiones.has(id)) sesiones.set(id, nuevaSesion(id))
+  return sesiones.get(id)
+}
+
+function crearSesion(id, agente) {
+  const s = nuevaSesion(id, agente)
+  sesiones.set(s.id, s)
+  return s
+}
+
+function setEstado(sesion, estado) {
+  sesion.estado = estado
+  emitir('sesion.estado', { sesionId: sesion.id, estado })
+}
+
+function listaSesiones() {
+  return [...sesiones.values()].map(s => ({
+    id: s.id, agente: s.agente, estado: s.estado,
+    mensajes: s.thread.length, creada: s.creada,
+  }))
+}
+
+// Backwards compat: el módulo exportaba `thread` como array global.
+function threadDefault() { return getSesion('default').thread }
+
+/* ── Capa de voz (STT / Cerebras / TTS) ── */
+
+async function sttOmlx(audioBytes, mime) {
+  const fd = new FormData()
+  fd.append('file', new Blob([audioBytes], { type: mime || 'audio/wav' }), 'voice.wav')
+  fd.append('model', OMLX_STT_MODEL)
+  fd.append('language', 'es')
+  const r = await fetch(`${OMLX_BASE}/v1/audio/transcriptions`, { method: 'POST', body: fd })
+  if (!r.ok) throw new Error('STT ' + r.status)
+  return (await r.json()).text || ''
+}
+
+async function ttsOmlx(text) {
+  const r = await fetch(`${OMLX_BASE}/v1/audio/speech`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: OMLX_TTS_MODEL, input: text, voice: 'jarvis', language: 'es' }),
+  })
+  if (!r.ok) throw new Error('TTS ' + r.status)
+  const buf = await r.arrayBuffer()
+  return Buffer.from(buf)
+}
+
+async function llmCerebras(messages, tools) {
+  const r = await fetch(CEREBRAS_URL, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${CEREBRAS_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: CEREBRAS_MODEL, messages, tools: tools || [], max_tokens: 300 }),
+  })
+  if (!r.ok) throw new Error('Cerebras ' + r.status)
+  return r.json()
+}
+
+/* ── 3. Única tool del asistente: delegar a un agente ── */
+
+const { execFile } = require('child_process')
+const { promisify } = require('util')
+const execFileP = promisify(execFile)
+
+async function orcaCmd(...args) {
+  const { stdout } = await execFileP('orca', args, { timeout: 60000 })
+  return stdout.trim()
+}
+
+let orcaServeProc = null
+async function asegurarOrca(tiempoMaxMs = 25000) {
+  const runtimeArriba = (s) => {
+    const r = s?.result || s
+    if (r.runtimeState === 'running') return true
+    if (r.app?.running === true) return true
+    if (r.runtime?.running === true) return true
+    return false
+  }
+  try {
+    const st = await orcaCmd('status', '--json')
+    const s = JSON.parse(st)
+    if (runtimeArriba(s)) return true
+  } catch (e) { /* sigue a iniciar */ }
+
+  if (!orcaServeProc) {
+    orcaServeProc = spawn('orca', ['serve', '--no-pairing', '--json'], {
+      detached: true, stdio: 'ignore',
+    })
+    orcaServeProc.unref()
+  }
+
+  const inicio = Date.now()
+  while (Date.now() - inicio < tiempoMaxMs) {
+    await new Promise(r => setTimeout(r, 500))
+    try {
+      const st = await orcaCmd('status', '--json')
+      const s = JSON.parse(st)
+      if (runtimeArriba(s)) return true
+    } catch (e) { /* reintenta */ }
+  }
+  throw new Error('Orca runtime no arrancó a tiempo')
+}
+
+let daemonTerminalHandle = null
+
+async function crearTerminalDaemon(titulo = 'hermes-voice-daemon') {
+  try {
+    const out = await orcaCmd('terminal', 'create', '--title', titulo, '--json')
+    const t = JSON.parse(out)
+    const r = t.result || t
+    const term = (r.terminal && (typeof r.terminal === 'string' ? r.terminal : r.terminal.handle)) ||
+        (Array.isArray(r.terminals) && r.terminals[0]?.handle) ||
+        (Array.isArray(t.terminals) && t.terminals[0]?.handle)
+    daemonTerminalHandle = term && term.startsWith('term_') ? term : null
+    if (!daemonTerminalHandle) {
+      const list = JSON.parse(await orcaCmd('terminal', 'list', '--json'))
+      const lr = list.result || list
+      const first = Array.isArray(lr) ? lr[0] : (Array.isArray(lr.terminals) ? lr.terminals[0] : null)
+      daemonTerminalHandle = first?.handle || null
+    }
+  } catch (e) {
+    daemonTerminalHandle = null
+  }
+  return daemonTerminalHandle
+}
+
+async function orcaCmdFrom(...args) {
+  if (!daemonTerminalHandle) await crearTerminalDaemon()
+  const full = daemonTerminalHandle
+    ? [...args.slice(0, -1), '--from', daemonTerminalHandle, args[args.length - 1]]
+    : args
+  return orcaCmd(...full)
+}
+
+const ORCA_TOOL = {
+  type: 'function',
+  function: {
+    name: 'delegar_a_orca',
+    description: 'Lanza un agente/worker en Orca con un pedido y devuelve el resultado. Es la unica forma de delegar: crea un orchestration run y una task (worker) que lo resuelve. Usa para ver/operar pantalla, archivos, sistemas, proyectos, o cualquier tarea que no sea conversacional.',
+    parameters: {
+      type: 'object',
+      properties: {
+        pedido: { type: 'string', description: 'El trabajo a delegar, en español, autocontenido' },
+      },
+      required: ['pedido'],
+    },
+  },
+}
+
+function orcaId(resp, tipo) {
+  const r = resp?.result || resp
+  const node = r?.[tipo] || (Array.isArray(r?.[tipo + 's']) && r[tipo + 's'][0]) || null
+  const id = (typeof node === 'string' ? node : node?.id) || (tipo === 'dispatch' && r?.dispatch_id) || null
+  return id
+}
+
+/* ── Delegación (R3: agente seleccionable por sesión) ── */
+
+async function delegarAgenente(agente, pedido, sesionId) {
+  emitir('delegacion.inicio', { sesionId, agente, pedido })
+  let resultado
+  try {
+    if (agente === 'hermes') resultado = await delegarHermesApi(pedido)
+    else if (agente === 'pi') resultado = await delegarPi(pedido)
+    else if (agente === 'orca') resultado = await delegarOrca(pedido)
+    else throw new Error('Agente no soportado: ' + agente)
+    emitir('delegacion.ok', {
+      sesionId, agente,
+      resultado: typeof resultado === 'string' ? resultado : JSON.stringify(resultado),
+    })
+    return resultado
+  } catch (e) {
+    emitir('delegacion.error', { sesionId, agente, error: e.message })
+    throw e
+  }
+}
+
+async function delegarHermesApi(pedido) {
+  const HERMES_KEY = process.env.API_SERVER_KEY
+  if (!HERMES_KEY) throw new Error('Falta API_SERVER_KEY para delegar a Hermes')
+  const r = await fetch('http://localhost:8642/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${HERMES_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'hermes-agent', messages: [{ role: 'user', content: pedido }] }),
+    signal: AbortSignal.timeout(90000),
+  })
+  if (!r.ok) throw new Error('Hermes API ' + r.status)
+  const j = await r.json()
+  return j.choices?.[0]?.message?.content || '(sin respuesta)'
+}
+
+async function delegarPi(pedido) {
+  throw new Error('Agente Pi no integrado aún')
+}
+
+async function delegarOrca(pedido) {
+  await asegurarOrca()
+  if (!daemonTerminalHandle) await crearTerminalDaemon()
+  const from = daemonTerminalHandle ? ['--from', daemonTerminalHandle] : []
+
+  const runOut = await orcaCmd('orchestration', 'run-create', '--objective', pedido, ...from, '--json')
+  const run = JSON.parse(runOut)
+  const runId = orcaId(run, 'run')
+  if (!runId) throw new Error('Orca run-create sin run_id: ' + runOut)
+
+  const taskOut = await orcaCmd('orchestration', 'task-create', '--spec', pedido, '--task-title', 'voz-delegacion', '--run', String(runId), ...from, '--json')
+  const task = JSON.parse(taskOut)
+  const taskId = orcaId(task, 'task')
+  if (!taskId) throw new Error('Orca task-create sin task_id: ' + taskOut)
+
+  const wStart = await orcaCmd('orchestration', 'worker-start', '--task', String(taskId), '--run', String(runId), ...from, '--json')
+  const worker = JSON.parse(wStart)
+  const dispatchId = orcaId(worker, 'dispatch')
+  if (!dispatchId) throw new Error('Orca worker-start sin dispatch_id: ' + wStart)
+
+  let resultado = null
+  const out = await orcaCmd('orchestration', 'worker-read', '--dispatch', String(dispatchId), ...from, '--json').catch(() => '')
+  if (out) { try { resultado = JSON.parse(out) } catch (e) { resultado = out } }
+
+  return { runId, taskId, dispatchId, resultado }
+}
+
+/* ── Decisión / loop del turno (por sesión) ── */
+
+async function procesarTurno(textoUsuario, opts = {}) {
+  const sesion = getSesion(opts.sessionId)
+  const agente = opts.agente || sesion.agente
+  if (opts.agente && AGENTES_DISPONIBLES.includes(opts.agente)) sesion.agente = opts.agente
+
+  setEstado(sesion, 'escuchando')
+  sesion.thread.push({ role: 'user', text: textoUsuario, ts: Date.now() })
+
+  setEstado(sesion, 'transcribiendo')
+
+  const ConversacionalSi = /^(hola|buenas|hey|oye|quien eres|que eres|como te llamas|gracias|buen dia|buenas tardes|buenas noches|saludos|que tal|como estas|cual es tu nombre|presentate|estas ahi|listo|ok|perfecto|genial|dime algo)*$/i.test(textoUsuario.trim()) || /(gracias|hola como estas|quien eres|cual es tu rol|buen trabajo|eres la voz)/i.test(textoUsuario)
+
+  if (!ConversacionalSi) {
+    sesion.thread.push({ role: 'assistant', text: 'Lo consulto ahora, señor.', ts: Date.now() })
+    setEstado(sesion, 'hablando')
+    let resultado
+    try {
+      resultado = await delegarAgenente(sesion.agente, textoUsuario, sesion.id)
+    } catch (e) {
+      resultado = { error: e.message }
+      setEstado(sesion, 'daemon-off')
+    }
+    const synth = await llmCerebras([
+      { role: 'system', content: VOICE_PROMPT }, ...apiMessagesPub(sesion, textoUsuario),
+      { role: 'assistant', content: `(delegado a ${sesion.agente}) ${JSON.stringify(resultado)}` },
+    ])
+    const final = synth.choices?.[0]?.message?.content || 'Listo, señor.'
+    sesion.thread.push({ role: 'assistant', text: final, ts: Date.now() })
+    setEstado(sesion, 'idle')
+    return { text: final, delegation: resultado, sesionId: sesion.id, agente: sesion.agente }
+  }
+
+  // Conversacional → el modelo responde
+  const hist = sesion.thread.slice(-8).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))
+  const apiMessages = [{ role: 'system', content: VOICE_PROMPT }, ...hist]
+  setEstado(sesion, 'hablando')
+  const resp = await llmCerebras(apiMessages, [ORCA_TOOL])
+  const msg = resp.choices?.[0]?.message
+  const toolCall = msg?.tool_calls?.[0]
+  if (toolCall?.name === 'delegar_a_orca') {
+    const pedido = JSON.parse(toolCall.arguments || '{}').pedido || textoUsuario
+    sesion.thread.push({ role: 'assistant', text: 'Lo consulto ahora, señor.', ts: Date.now() })
+    const resultado = await delegarAgenente(sesion.agente, pedido, sesion.id)
+    const synth = await llmCerebras([
+      { role: 'system', content: VOICE_PROMPT }, ...apiMessages,
+      { role: 'assistant', content: `(delegado a ${sesion.agente}) ${JSON.stringify(resultado)}` },
+    ])
+    const final = synth.choices?.[0]?.message?.content || 'Listo, señor.'
+    sesion.thread.push({ role: 'assistant', text: final, ts: Date.now() })
+    setEstado(sesion, 'idle')
+    return { text: final, delegation: resultado, sesionId: sesion.id, agente: sesion.agente }
+  }
+  const texto = msg?.content || 'No entendí, señor.'
+  sesion.thread.push({ role: 'assistant', text: texto, ts: Date.now() })
+  setEstado(sesion, 'idle')
+  return { text: texto, sesionId: sesion.id, agente: sesion.agente }
+}
+
+function apiMessagesPub(session, utx) {
+  const h = session.thread.slice(0, -1).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))
+  return [{ role: 'user', content: utx }].concat(h.slice(-7))
+}
+
+module.exports = {
+  procesarTurno,
+  sttOmlx, ttsOmlx, llmCerebras,
+  sesiones, getSesion, crearSesion, listaSesiones,
+  bus, emitir,
+  AGENTES_DISPONIBLES,
+  // backcompat
+  get thread() { return threadDefault() },
+}
