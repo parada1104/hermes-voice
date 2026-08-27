@@ -31,3 +31,12 @@ ai-specs/.env
 ai-specs/.env.bak
 ai-specs/.envrc.bak
 # --- end ai-specs ---
+
+# --- ajustes propios: FUERA del bloque de ai-specs, que sync reescribe ---
+# El .envrc solo carga variables (dotenv_if_exists): no lleva secretos y le
+# sirve a cualquiera que clone. Se versiona a propósito, pisando la regla de
+# arriba — en git, la última regla que matchea gana.
+!.envrc
+# Stubs de deprecación que el CLI regenera; el archivo real es ai-specs.env.example.
+ai-specs/.env.example
+ai-specs/.envrc.example
