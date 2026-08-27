@@ -176,6 +176,21 @@ async function main(){
   const alive = await c.eval('document.readyState==="complete"')
   assert('UI viva tras flushAudio(silencio)', alive, 'no alive')
 
+  // 7b. STT incremental: el módulo construirParcial arma un mensaje de audio
+  //     parcial con el webm real (integración UI→lib), y null sin chunks.
+  const parcial = await c.eval(`(async()=>{
+    const ab=new Uint8Array(atob(${JSON.stringify(b64)})).buffer
+    const chunk=new Blob([ab,ab,ab],{type:'audio/webm'})
+    const msg=await construirParcial({ws:{readyState:1},chunks:[chunk,chunk],mime:'audio/webm',sessionId,agent,profile:perfil,agentSessionId,agentModel})
+    const vacio=await construirParcial({ws:{readyState:1},chunks:[],mime:'audio/webm'})
+    let t=null
+    if(msg){ const p=JSON.parse(msg); t={type:p.type,parcial:p.parcial,mime:p.mime,bytes:new Uint8Array(atob(p.data)).length} }
+    return JSON.stringify({msg:t,vacio})
+  })()`)
+  const pc = JSON.parse(parcial)
+  assert('construirParcial arma mensaje parcial:true con blob real', pc.msg && pc.msg.parcial===true && pc.msg.type==='audio' && pc.msg.mime==='audio/webm' && pc.msg.bytes>=1024, 'msg='+JSON.stringify(pc.msg))
+  assert('construirParcial sin chunks devuelve null', pc.vacio===null, 'vacio='+pc.vacio)
+
   // 8. Console errors durante todo el flujo
   console.log('== Console errors capturados: '+(c.consoleErrors.length)+' ==')
   c.consoleErrors.slice(0,8).forEach(e=>console.log('   !',e.slice(0,120)))
