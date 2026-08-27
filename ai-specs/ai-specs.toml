@@ -1,0 +1,159 @@
+# ai-specs.toml — project root manifest.
+#
+# This is the ONLY V1 source of truth for the project. The canonical surface is:
+#   [project]       optional section
+#   [agents]        optional section (default: enabled = [])
+#   [recipes.<id>]  optional — named bundles of skills, commands, templates,
+#                   and MCP presets
+#   [[deps]]        optional repeated section (required per entry: id, source)
+#   [[bindings]]    optional repeated section (per entry: capability, recipe)
+#   [mcp.<name>]    optional repeated section
+#
+# Local skills live under ai-specs/skills/<name>/ and are autodiscovered —
+# they are not listed here.
+#
+# Commands (global CLI, published at https://github.com/parada1104/ai-specs-cli):
+#   ai-specs init                # bootstrap ai-specs/ directory (idempotent)
+#   ai-specs sync                # vendor deps + regenerate AGENTS.md + fan-out
+#   ai-specs sync-agent --all    # distribute skills + MCP to every enabled agent
+#   /skills-as-rules             # formalize a convention as a local skill
+#   ai-specs add-dep <url>       # register a vendored skill in [[deps]]
+
+[project]
+# name is optional; default: ""
+name = "hermes-voice"
+# subrepos is optional; default: []. Accepts root-relative paths only.
+# V1: used as derived sync targets; they do not create local manifests.
+subrepos = []
+
+[agents]
+# enabled is optional; default: []. Only these agents receive configs.
+# Supported: claude, cursor, opencode, codex, copilot, gemini, pi, omp
+enabled = ["claude", "cursor", "opencode"]
+
+# -----------------------------------------------------------------------------
+# Recipes — named bundles of skills, commands, templates, and MCP presets.
+# Declared in catalog/recipes/<id>/recipe.toml. Sync materializes the version
+# shipped with the installed CLI; no per-recipe version pin is required.
+#
+# [recipes.<id>]
+# enabled = true
+
+# [recipes.worktree-flow]
+# enabled = true
+#
+# [recipes.worktree-flow.config]
+# repo_topology = "auto"  # auto | standalone | monorepo-apps | monorepo-submodules
+# integration_branch = "main"
+# gate_mode = "always"
+# # version = "1.0.0"  # legacy — ignored with WARN if present
+
+[recipes.session-context]
+enabled = true
+
+# -----------------------------------------------------------------------------
+# CLI version policy (optional) — pin the ai-specs CLI version for this project.
+# Run `ai-specs doctor` to see installed vs pinned vs last-synced versions.
+#
+# Optional CLI version policy — see docs/ai-specs-toml.md (table name: tool).
+# Example:
+#   version = "0.12.2"
+#   policy = "exact"
+#
+# Minimum version instead of exact pin:
+#   min_version = "0.11.0"
+#   policy = "min"
+
+# -----------------------------------------------------------------------------
+# Vendored skill dependencies — each [[deps]] entry is cloned by
+# `ai-specs sync` into ai-specs/skills/<id>/ (gitignored).
+#
+#   id                  (req) target directory under skills/
+#   source              (req) git URL (anything `git clone` accepts)
+#   path                (opt) subdirectory inside the repo where SKILL.md lives
+#   scope               (opt) default ["root"]
+#   auto_invoke         (opt) trigger phrases for the AGENTS.md Auto-invoke table
+#   license             (opt) SPDX identifier
+#   vendor_attribution  (opt) upstream author/org, cited in skill description
+#   version             (opt) semantic version for metadata.version
+#
+# [[deps]]
+# id = "tdd"
+# source = "https://github.com/obra/superpowers"
+# path = "skills/test-driven-development"
+# version = "1.0.0"
+
+# -----------------------------------------------------------------------------
+# Explicit capability bindings — resolves ambiguity when multiple enabled
+# recipes declare the same capability.
+#
+#   capability         (req) capability ID to bind
+#   recipe             (req) recipe ID that provides the capability
+#
+# [[bindings]]
+# capability = "tracker"
+# recipe = "trello-mcp-workflow"
+
+# -----------------------------------------------------------------------------
+# MCP servers — distributed by sync-agent to each platform's native format.
+# Environment variables are loaded from .envrc; agents interpolate at runtime.
+#
+#   command      optional; string or list
+#   args         optional; default []
+#   env          optional canonical field; default {}
+#   environment  tolerated input alias of `env`; not the canonical name
+#   timeout      optional; default null
+#   enabled      tolerated passthrough; does not extend the V1 contract
+#
+# [mcp.example]
+# command = "npx"
+# args = ["-y", "@example/mcp-server"]
+# env = { API_KEY = "$EXAMPLE_API_KEY" }
+# timeout = 30000
+
+# -----------------------------------------------------------------------------
+# Runtime brief — project identity sections only.
+#
+# Behavioral sections (runtime_flow, context_sources, conflict_policy,
+# workflow_rules, useful_commands, mcp_descriptions) are contributed
+# automatically by enabled recipes via their [provides.brief] declarations.
+# You do NOT need to duplicate them here.
+#
+# To suppress recipe contributions for a section and use only your own prose,
+# add: <section>_mode = "replace" (e.g. workflow_rules_mode = "replace")
+#
+# [brief]
+# render = false   # opt out of managed AGENTS.md generation (default: true)
+# intro = """
+# One-paragraph description of this agent's role and context.
+# """
+# purpose = "One-line statement of this project's primary goal."
+
+[recipes.git-pr-flow]
+enabled = true
+
+[recipes.git-pr-flow.config]
+auto_switch_account = false
+base_branch = "main"
+expected_owner = "parada1104"
+
+[recipes.worktree-flow]
+enabled = true
+
+[recipes.worktree-flow.config]
+WORKTREE_GATE_PROTECTED = "main development"
+auto_remove_merged = true
+gate_impl = "auto"
+gate_mode = "always"
+gate_scope = "auto"
+integration_branch = "main"
+repo_topology = "auto"
+worktrees_dir = ".worktrees"
+
+[recipes.vault-canonical-store]
+enabled = true
+
+[recipes.vault-canonical-store.config]
+decisions_folder = "decisiones"
+sessions_folder = "sessions"
+# vault_scope = ""  # optional

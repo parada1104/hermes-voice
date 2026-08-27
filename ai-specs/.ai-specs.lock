@@ -1,0 +1,30 @@
+# Managed by ai-specs. Do not edit by hand.
+# Provenance stamp: [meta] records the CLI version and timestamp of the last
+# sync. [managed.*] records integrity only for CLI-owned override targets;
+# it is not a general content-integrity manifest. git covers the committed
+# project surface; skill/recipe/dep content hashes are not tracked.
+
+[meta]
+cli_version = "0.22.0"
+synced_at = "2026-08-27T00:47:01Z"
+
+[managed."ai-specs/recipes/vault-canonical-store/bin/vault-fs-mcp.sh"]
+sha256 = "22929454cf9c504c97cba5e94654d97cffde04104d539b1aafae5f35a8c20dfc"
+recipe = "vault-canonical-store"
+source = "templates/vault-fs-mcp.sh"
+kind = "template"
+policy = "auto"
+
+[managed."ai-specs/recipes/worktree-flow/hooks/worktree-gate.sh"]
+sha256 = "3abce15974ce3ad16add653f48f3d9689a34b1077faf392cc4af9e022761ff1c"
+recipe = "worktree-flow"
+source = "hooks/worktree-gate.sh"
+kind = "gate"
+policy = "auto"
+
+[managed."ai-specs/recipes/worktree-flow/overrides/bin/worktree-cleanup.sh"]
+sha256 = "9520d0f56f603c081bb6e956c03609ba816fbc322bffe22da61ca3cb78c875c6"
+recipe = "worktree-flow"
+source = "templates/worktree-cleanup.sh"
+kind = "template"
+policy = "auto"
