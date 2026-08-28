@@ -40,3 +40,6 @@ ai-specs/.envrc.bak
 # Stubs de deprecación que el CLI regenera; el archivo real es ai-specs.env.example.
 ai-specs/.env.example
 ai-specs/.envrc.example
+# Worktrees de trabajo (recipes.worktree-flow.worktrees_dir): son checkouts
+# locales de ramas que ya viven en el remoto, no contenido del repo.
+.worktrees/
