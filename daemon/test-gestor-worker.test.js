@@ -221,12 +221,26 @@ test('precalentar dos veces la misma sesión no duplica workers', async () => {
   assert.strictEqual(orca.creados.length, 1)
 })
 
-test('precalentar otra sesión cierra el worker anterior', async () => {
+test('precalentar otra sesión NO cierra el worker (el switch real ocurre al delegar)', async () => {
   const orca = orcaFalso()
   const g = gestorFalso(orca)
   await g.precalentar(sesion({ id: 's1' }))
   await g.precalentar(sesion({ id: 's2' }))
+  // No matar el REPL por un simple cambio de sesión de voz: el switch real se
+  // decide en `_delegar` cuando hay un pedido de verdad.
+  assert.deepStrictEqual(orca.cerrados, [])
+  assert.strictEqual(orca.creados.length, 1)
+  assert.strictEqual(g.estado().sesionId, 's1')
+})
+
+test('delegar a otra sesión sí cierra el worker anterior y crea el nuevo', async () => {
+  const orca = orcaFalso()
+  const g = gestorFalso(orca)
+  await g.precalentar(sesion({ id: 's1' }))
+  await g.delegar(sesion({ id: 's2' }), 'hola')
   assert.deepStrictEqual(orca.cerrados, ['term_1'])
+  assert.strictEqual(orca.creados.length, 2)
+  assert.strictEqual(g.estado().sesionId, 's2')
 })
 
 test('si el precalentado falla no rompe: la delegación lo reintenta', async () => {
