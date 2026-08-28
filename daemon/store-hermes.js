@@ -130,7 +130,11 @@ function informeParcial({ texto = '', herramientas = [], avances = [], motivo = 
 async function consultarSqlite(ruta, sql) {
   // `mode=ro` es la garantía de que nunca escribimos en el store de Hermes.
   const uri = `file:${ruta}?mode=ro`
-  const { stdout } = await execFileAsync(SQLITE_BIN, ['-json', uri, sql], { timeout: 15000, maxBuffer: 64 * 1024 * 1024 })
+  // Hermes escribe en el mismo state.db mientras responde. Sin busy_timeout el
+  // lector choca con la escritura en curso y revienta con "database is locked"
+  // — el turno por chat se pierde en silencio.
+  const sqlCon = `PRAGMA busy_timeout=10000; ${sql}`
+  const { stdout } = await execFileAsync(SQLITE_BIN, ['-json', uri, sqlCon], { timeout: 15000, maxBuffer: 64 * 1024 * 1024 })
   const texto = String(stdout || '').trim()
   if (!texto) return []   // sqlite3 -json no imprime nada cuando no hay filas
   try { return JSON.parse(texto) } catch (_) { return [] }

@@ -1090,6 +1090,7 @@ let contAudioCtx=null, contAnalizador=null, contFuente=null, contStreamVigilado=
 function vigilarSilencio(recorder){
   const det=new DetectorVoz()
   recorder.__huboFrase=false
+  recorder.__vozAhora=false
   try{
     if(!contAudioCtx || contAudioCtx.state==='closed'){
       contAudioCtx=new (window.AudioContext||window.webkitAudioContext)()
@@ -1120,6 +1121,8 @@ function vigilarSilencio(recorder){
     if(recorder.state!=='recording'||contRec!==recorder){ vadTimer=null; return }
     contAnalizador.getFloatTimeDomainData(buf)
     const r=det.procesar(energiaRms(buf), performance.now()-t0)
+        recorder.__vozAhora = r.estado==='hablando'
+        recorder.__vozMs = det.vozMs
     if(listening) micBtn.classList.toggle('voz', r.estado==='hablando')
     if(!r.accion){ vadTimer=setTimeout(tick,100); return }
     vadTimer=null
@@ -1164,6 +1167,10 @@ async function arrancarContinuo(){
     const lanzarParciales=()=>{
       parcialTimer=setTimeout(async ()=>{
         if(recorder.state!=='recording'||contRec!==recorder){parcialTimer=null;return}
+        // Solo si el VAD oyó voz real en esta captura (>=300ms). En silencio
+        // el blob acumulado es ruido de ambiente: mandarlo haría que el STT
+        // se invente frases cuando no se dijo nada.
+        if(!(recorder.__vozMs>=300)){ lanzarParciales(); return }
         try{
           const msg=await construirParcial({ws,chunks,mime:opts.mimeType||'audio/webm',sessionId,agent,profile:perfil,agentSessionId,agentModel})
           if(msg) ws.send(msg)

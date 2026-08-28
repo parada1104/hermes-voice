@@ -204,7 +204,11 @@ class GestorWorker {
   async precalentar(sesion) {
     return this._enFila(async () => {
       try {
-        await this._asegurar(sesion)
+        // No cerrar el worker existente por un simple cambio de sesión de voz:
+        // eso mataba el REPL de Hermes con cada `activate` (close+create en
+        // cadena). El switch real ocurre en `_delegar` cuando hay un pedido.
+        if (this.actual?.handle) return this.actual.sesionId === sesion.id
+        await this._crear(sesion)
         return true
       } catch (e) {
         this.log('worker.precalentado-falló', { sesionId: sesion?.id, error: e.message })

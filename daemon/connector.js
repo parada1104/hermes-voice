@@ -215,7 +215,14 @@ function getSesion(id) {
   if (!id) id = 'default'
   if (!sesiones.has(id)) { sesiones.set(id, nuevaSesion(id)); persistirSesiones() }
   return sesiones.get(id)
-} 
+}
+function sesionExiste(id) {
+  // true para default siempre; para el resto, solo si fue creada explícitamente
+  // (POST /v1/sessions). Impide que un id desconocido del cable cree una
+  // sesión fantasma de la nada.
+  if (!id) return true
+  return id === 'default' || sesiones.has(id)
+}
 function guardarSesion(sesion) { persistirSesiones(); return sesion }
 
 function crearSesion(id, agente, perfil = '', agentSessionId = '', agentModel = '', workingDir = '', titulo = '') {
@@ -961,6 +968,13 @@ function aplicarPerfilSesion(sesion, perfilEntrante) {
 }
 
 async function procesarTurno(textoUsuario, opts = {}) {
+  // No crear sesiones fantasma: un turno llega de una sesión que la UI creó
+  // por POST /v1/sessions (o 'default'). Si el id del cable es desconocido,
+  // es un cliente desactualizado o un error: se rechaza en vez de sembrar
+  // una sesión nueva sin que Robert la pida.
+  if (!sesionExiste(opts.sessionId)) {
+    throw new Error(`Sesión desconocida: ${opts.sessionId || '(vacía)'}. Crea la sesión de nuevo.`)
+  }
   const sesion = getSesion(opts.sessionId)
   aplicarPerfilSesion(sesion, opts.profile)
   // El agente queda attachado a la conversación: el adjunto se fija una vez.
@@ -1372,6 +1386,7 @@ module.exports = {
   sttOmlx, ttsOmlx, ttsOmlxStreaming, llmCerebras, llmCerebrasStream,
   delegarHermesApi, delegarHermesSesion, delegarAgenente, ejecutarDelegacionDiferida, listarSesionesHermes, historialSesionHermes, cargarContextoAgente, resumenContextoAgente, normalizarToolCall, listarModelosHermes, fijarModeloDelegacion,
   sesiones, getSesion, crearSesion, listaSesiones, borrarSesion, setEstado,
+  sesionExiste,
   bus, emitir,
   AGENTES_DISPONIBLES,
   estadoInfra,
