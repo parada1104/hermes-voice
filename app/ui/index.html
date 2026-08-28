@@ -1246,7 +1246,10 @@ micBtn.addEventListener('mousedown',async e=>{
       },2000)
     }
     lanzarParcialesPtt()
-    const hard=setTimeout(()=>{if(hablando){hablando=false;micBtn.classList.remove('rec');pararMic()}},20000)
+    // Red de seguridad por si se pierde el mouseup (foco perdido, ventana
+    // oculta), NO una regla de producto: en push-to-talk el final lo decide
+    // Robert soltando el botón. A 20s cortaba dictados normales a mitad.
+    const hard=setTimeout(()=>{if(hablando){hablando=false;micBtn.classList.remove('rec');pararMic()}},120000)
     const blob=await done; clearTimeout(hard)
     if(hablando){hablando=false;micBtn.classList.remove('rec')}
     await flushAudio(blob)

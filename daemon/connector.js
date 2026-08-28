@@ -59,6 +59,7 @@ const { parsearSSE, acumularDelta, mensajeDesdeAcumulado, frasesSegurasNuevas, c
 const { crearLogger } = require('./log')
 const { ventanaConversacion } = require('./ventana')
 const { prometeAccion, anunciaSinEntregar, turnoVacio, limpiarPedido } = require('./promesas')
+const { hayVozReal } = require('./audio-energia')
 const { extraerRespuestaHermes } = require('./salida-cli')
 const { resultadoVacio, interpretarVeredicto, esCruda, esCopiaLiteral } = require('./veredicto')
 const { idDesdeTitulo, tituloVisible } = require('./sesiones')
@@ -393,6 +394,17 @@ async function sttOmlx(audioBytes, mime) {
       fs.unlinkSync(tmp); fs.unlinkSync(tmpWav)
     } catch (e) { throw new Error('STT transcod ' + e.message) }
   }
+  // Piso de energía. Whisper inventa frases enteras sobre silencio —medido
+  // contra este mismo oMLX: 2 s de silencio dan " Gracias.", 4 s dan " Gracias
+  // por ver el video."— y encima reporta `no_speech_prob = 7.7e-11`, o sea que
+  // preguntarle a él no sirve. Se mira el audio que llegó: si no hay voz, no
+  // hay nada que transcribir.
+  //
+  // Va acá y no en la UI a propósito: es la última red y cubre push-to-talk,
+  // modo continuo y cualquier camino futuro sin que cada uno tenga que acordarse
+  // de poner su propia compuerta.
+  if (!hayVozReal(bytes)) return ''
+
   const fd = new FormData()
   fd.append('file', new Blob([bytes], { type: 'audio/wav' }), 'voice.wav')
   fd.append('model', OMLX_STT_MODEL)

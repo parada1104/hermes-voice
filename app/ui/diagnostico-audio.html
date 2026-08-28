@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagnóstico de audio — hermes-voice</title>
+<style>
+  :root{ --bg:#0f1115; --panel:#171a21; --borde:#262b36; --txt:#e6e9ef; --tenue:#9aa3b2;
+         --ok:#3fb950; --mal:#f85149; --duda:#d29922; --acento:#58a6ff; }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px;background:var(--bg);color:var(--txt);
+       font:14px/1.55 ui-sans-serif,-apple-system,"SF Pro Text",system-ui,sans-serif}
+  h1{font-size:19px;margin:0 0 4px}
+  h2{font-size:15px;margin:0 0 8px}
+  .sub{color:var(--tenue);margin:0 0 22px}
+  .paso{background:var(--panel);border:1px solid var(--borde);border-radius:10px;
+        padding:16px;margin-bottom:14px}
+  .instr{color:var(--tenue);margin:0 0 12px}
+  button{background:var(--acento);color:#06121f;border:0;border-radius:7px;
+         padding:9px 15px;font-weight:600;font-size:13px;cursor:pointer}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.sec{background:#2b313d;color:var(--txt)}
+  .barra{height:9px;background:#0b0d12;border-radius:5px;overflow:hidden;margin:12px 0 6px;
+         position:relative}
+  .barra i{display:block;height:100%;background:var(--ok);width:0;transition:width .06s linear}
+  .barra u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--duda);left:0}
+  .res{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
+       margin-top:10px;color:var(--tenue)}
+  .ok{color:var(--ok)} .mal{color:var(--mal)} .duda{color:var(--duda)}
+  textarea{width:100%;height:270px;background:#0b0d12;color:var(--txt);border:1px solid var(--borde);
+           border-radius:8px;padding:12px;font:12px/1.6 ui-monospace,Menlo,monospace;resize:vertical}
+  .fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<h1>Diagnóstico de audio</h1>
+<p class="sub">Mide el micrófono real con el mismo <code>DetectorVoz</code> que usa la app.
+Responde dos preguntas: por qué el STT inventa frases en silencio, y si el barge-in en
+modo continuo es viable.</p>
+
+<!-- ── 1 ── -->
+<div class="paso">
+  <h2>1 · Ruido ambiente <span class="duda">(quedate en silencio)</span></h2>
+  <p class="instr">10 segundos <b>sin hablar</b>. Dejá la sala como cuando usás la app.
+  Mide si el ruido de fondo cruza el umbral del VAD y dispara capturas fantasma.</p>
+  <div class="fila"><button id="b1">Medir ambiente</button><span id="e1" class="res"></span></div>
+  <div class="barra"><i id="bar1"></i><u id="marca1"></u></div>
+  <div class="res" id="r1"></div>
+</div>
+
+<!-- ── 2 ── -->
+<div class="paso">
+  <h2>2 · Tu voz <span class="duda">(hablá normal)</span></h2>
+  <p class="instr">6 segundos hablando a volumen y distancia normales. Da el margen real
+  entre tu voz y el ruido: si es chico, ningún umbral fijo puede separarlos.</p>
+  <div class="fila"><button id="b2">Medir voz</button><span id="e2" class="res"></span></div>
+  <div class="barra"><i id="bar2"></i><u id="marca2"></u></div>
+  <div class="res" id="r2"></div>
+</div>
+
+<!-- ── 3 ── -->
+<div class="paso">
+  <h2>3 · Eco del parlante <span class="duda">(silencio, subí el volumen)</span></h2>
+  <p class="instr">Reproduce una señal en banda de voz por los parlantes con el micrófono
+  abierto, y mide cuánto vuelve a entrar. <b>Subí el volumen al nivel al que escuchás al
+  agente</b> y no hables. Corre dos veces: con la cancelación de eco de Chromium activada
+  (el default de la app) y desactivada.</p>
+  <p class="instr">Si querés usar voz real en vez de la señal sintética, cargá un .wav del TTS:
+  <input type="file" id="wav" accept="audio/*"></p>
+  <div class="fila">
+    <button id="b3a">Medir eco · AEC activada (default app)</button>
+    <button id="b3b" class="sec">Medir eco · AEC desactivada</button>
+    <span id="e3" class="res"></span>
+  </div>
+  <div class="barra"><i id="bar3"></i><u id="marca3"></u></div>
+  <div class="res" id="r3"></div>
+</div>
+
+<!-- ── reporte ── -->
+<div class="paso">
+  <h2>Reporte</h2>
+  <p class="instr">Copiá esto y pegámelo.</p>
+  <textarea id="out" readonly placeholder="Corré las mediciones…"></textarea>
+  <div class="fila" style="margin-top:10px">
+    <button id="copiar">Copiar reporte</button>
+    <button id="reset" class="sec">Reiniciar</button>
+  </div>
+</div>
+
+<script src="./lib/vad.js"></script>
+<script>
+// vad.js se carga como script clásico: DetectorVoz/energiaRms/POR_DEFECTO quedan
+// como bindings globales, igual que en index.html. No hay `module` en el browser.
+const UMBRAL = POR_DEFECTO.umbral        // 0.02
+const MIN_VOZ = POR_DEFECTO.minVozMs     // 300
+const ESCALA = 0.15                      // tope de las barras, para que 0.02 se vea
+
+const $ = id => document.getElementById(id)
+const datos = {}
+
+// Percentil sobre una muestra ya ordenable.
+function pct(xs, p){
+  if(!xs.length) return 0
+  const s = [...xs].sort((a,b)=>a-b)
+  return s[Math.min(s.length-1, Math.floor(s.length*p))]
+}
+const dB = x => x>0 ? (20*Math.log10(x)).toFixed(1)+' dBFS' : '-inf'
+const n5 = x => x.toFixed(5)
+
+for(const i of [1,2,3]) $('marca'+i).style.left = (UMBRAL/ESCALA*100)+'%'
+
+/**
+ * Abre el micrófono y muestrea energía RMS cada 100 ms — el mismo período que
+ * `vigilarSilencio` en la app. Corre en paralelo un DetectorVoz real para saber
+ * no solo cuánta energía hay, sino qué HABRÍA DECIDIDO la app con ese audio.
+ */
+async function medir({ ms, constraints, barra, estado, alTerminar }){
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints, video:false })
+  const ctx = new (window.AudioContext||window.webkitAudioContext)()
+  const an = ctx.createAnalyser(); an.fftSize = 1024
+  ctx.createMediaStreamSource(stream).connect(an)
+  const buf = new Float32Array(an.fftSize)
+
+  const det = new DetectorVoz()
+  const muestras = []
+  let cruces = 0, acciones = [], t0 = performance.now()
+
+  await new Promise(res => {
+    const tick = () => {
+      const t = performance.now() - t0
+      if(t >= ms) return res()
+      an.getFloatTimeDomainData(buf)
+      const e = energiaRms(buf)
+      muestras.push(e)
+      if(e >= UMBRAL) cruces++
+      const r = det.procesar(e, t)
+      if(r.accion) acciones.push({ t: Math.round(t), accion: r.accion, vozMs: Math.round(det.vozMs) })
+      barra.style.width = Math.min(100, e/ESCALA*100)+'%'
+      barra.style.background = e>=UMBRAL ? 'var(--mal)' : 'var(--ok)'
+      estado.textContent = `${((ms-t)/1000).toFixed(1)}s`
+      setTimeout(tick, 100)
+    }
+    tick()
+  })
+
+  stream.getTracks().forEach(t=>t.stop()); ctx.close()
+  barra.style.width='0'; estado.textContent=''
+
+  const r = {
+    n: muestras.length,
+    p50: pct(muestras,.50), p95: pct(muestras,.95), max: Math.max(...muestras,0),
+    cruces, pctCruces: muestras.length ? cruces/muestras.length*100 : 0,
+    vozMsTotal: Math.round(det.vozMs), acciones,
+    settings: stream.getAudioTracks?.()[0]?.getSettings?.() || {},
+  }
+  alTerminar(r); volcarReporte(); return r
+}
+
+/* ── 1 · ambiente ── */
+$('b1').onclick = async () => {
+  $('b1').disabled = true
+  try{
+    const r = await medir({ ms:10000, constraints:true, barra:$('bar1'), estado:$('e1'),
+                            alTerminar: x => datos.ambiente = x })
+    // El veredicto que importa: ¿el ruido solo alcanza para que el VAD crea que hablaste?
+    const miente = r.vozMsTotal >= MIN_VOZ
+    $('r1').innerHTML =
+      `p50 ${n5(r.p50)} (${dB(r.p50)}) · p95 ${n5(r.p95)} · max ${n5(r.max)}\n`+
+      `umbral del VAD ${UMBRAL} — lo cruzó el ${r.pctCruces.toFixed(1)}% del tiempo\n`+
+      `vozMs acumulado en silencio: ${r.vozMsTotal} ms (mínimo para "hubo frase": ${MIN_VOZ})\n`+
+      (miente
+        ? `<span class="mal">FALLA — en silencio el VAD acumuló ${r.vozMsTotal} ms de "voz". `+
+          `La compuerta del parcial se abre sola y el STT recibe silencio.</span>`
+        : `<span class="ok">OK — el ruido no alcanza el umbral. El VAD no miente en silencio.</span>`)
+  }catch(e){ $('r1').innerHTML = `<span class="mal">error: ${e.message}</span>` }
+  $('b1').disabled = false
+}
+
+/* ── 2 · voz ── */
+$('b2').onclick = async () => {
+  $('b2').disabled = true
+  try{
+    const r = await medir({ ms:6000, constraints:true, barra:$('bar2'), estado:$('e2'),
+                            alTerminar: x => datos.voz = x })
+    const amb = datos.ambiente
+    const margen = amb && amb.p95>0 ? r.p50/amb.p95 : null
+    $('r2').innerHTML =
+      `p50 ${n5(r.p50)} (${dB(r.p50)}) · p95 ${n5(r.p95)} · max ${n5(r.max)}\n`+
+      `cruzó el umbral el ${r.pctCruces.toFixed(1)}% del tiempo · vozMs ${r.vozMsTotal} ms\n`+
+      (margen===null ? `<span class="duda">corré primero el paso 1 para el margen</span>`
+        : margen>=4 ? `<span class="ok">margen voz/ruido ${margen.toFixed(1)}× — un umbral fijo separa bien</span>`
+        : margen>=2 ? `<span class="duda">margen ${margen.toFixed(1)}× — justo; conviene umbral adaptativo</span>`
+        : `<span class="mal">margen ${margen.toFixed(1)}× — ningún umbral fijo puede separar voz de ruido</span>`)
+  }catch(e){ $('r2').innerHTML = `<span class="mal">error: ${e.message}</span>` }
+  $('b2').disabled = false
+}
+
+/* ── 3 · eco ──
+   Señal en banda de voz (300-3400 Hz) modulada en sílabas, para que la AEC y el
+   VAD la traten como voz y no como un tono puro. */
+let wavCargado = null
+$('wav').onchange = e => { const f=e.target.files[0]; if(f) wavCargado = URL.createObjectURL(f) }
+
+function sonarSintetico(ctx, seg){
+  const ruido = ctx.createBufferSource()
+  const b = ctx.createBuffer(1, ctx.sampleRate*seg, ctx.sampleRate)
+  const d = b.getChannelData(0)
+  for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1)
+  ruido.buffer = b
+  const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=.7
+  const g = ctx.createGain()
+  // envolvente silábica ~4 Hz: se parece a habla, no a un zumbido
+  const lfo = ctx.createOscillator(); lfo.frequency.value=4
+  const lfoG = ctx.createGain(); lfoG.gain.value=.45
+  g.gain.value=.5; lfo.connect(lfoG); lfoG.connect(g.gain)
+  ruido.connect(bp); bp.connect(g); g.connect(ctx.destination)
+  lfo.start(); ruido.start()
+  return () => { try{ruido.stop();lfo.stop()}catch(e){} }
+}
+
+async function medirEco(aec){
+  const btn = aec ? $('b3a') : $('b3b')
+  btn.disabled = true
+  try{
+    const salida = new (window.AudioContext||window.webkitAudioContext)()
+    let parar, audioEl
+    if(wavCargado){
+      audioEl = new Audio(wavCargado); audioEl.loop = true; audioEl.volume = 1
+      await audioEl.play(); parar = () => { audioEl.pause() }
+    } else {
+      parar = sonarSintetico(salida, 12)
+    }
+    // 400 ms para que la AEC converja antes de medir
+    await new Promise(r=>setTimeout(r,400))
+    const r = await medir({
+      ms: 8000,
+      constraints: { echoCancellation: aec, noiseSuppression: aec, autoGainControl: aec },
+      barra: $('bar3'), estado: $('e3'),
+      alTerminar: x => datos[aec ? 'ecoAec' : 'ecoSinAec'] = x,
+    })
+    parar(); salida.close()
+
+    const amb = datos.ambiente
+    const sobreAmbiente = amb && amb.p50>0 ? (r.p50/amb.p50) : null
+    const autoCorta = r.vozMsTotal >= MIN_VOZ
+    const bloqueEco =
+      `<b>AEC ${aec?'activada (default de la app)':'desactivada'}</b> — fuente: ${wavCargado?'wav cargado':'señal sintética'}\n`+
+      `p50 ${n5(r.p50)} (${dB(r.p50)}) · p95 ${n5(r.p95)} · max ${n5(r.max)}\n`+
+      `cruzó el umbral el ${r.pctCruces.toFixed(1)}% · vozMs ${r.vozMsTotal} ms`+
+      (sobreAmbiente!==null ? ` · ${sobreAmbiente.toFixed(1)}× el ambiente\n` : `\n`)+
+      (autoCorta
+        ? `<span class="mal">El eco solo dispararía el barge-in: el agente se cortaría a sí mismo. `+
+          `Hace falta anti-eco propio.</span>`
+        : `<span class="ok">El eco NO alcanza el umbral: se puede dejar el mic abierto durante el TTS `+
+          `sin que el agente se auto-interrumpa.</span>`)
+    // Las dos corridas (con y sin AEC) se apilan para poder compararlas de un vistazo.
+    const previos = $('r3').dataset.prev || ''
+    $('r3').dataset.prev = bloqueEco + (previos ? '\n\n' + previos : '')
+    $('r3').innerHTML = $('r3').dataset.prev
+  }catch(e){ $('r3').innerHTML = `<span class="mal">error: ${e.message}</span>` }
+  btn.disabled = false
+}
+$('b3a').onclick = () => medirEco(true)
+$('b3b').onclick = () => medirEco(false)
+
+/* ── reporte ── */
+function bloque(nombre, r){
+  if(!r) return `${nombre}: (sin medir)`
+  const s = r.settings
+  return `${nombre}:
+  muestras     ${r.n} @100ms
+  p50          ${n5(r.p50)}  (${dB(r.p50)})
+  p95          ${n5(r.p95)}
+  max          ${n5(r.max)}
+  cruces>=${UMBRAL}  ${r.cruces} (${r.pctCruces.toFixed(1)}% del tiempo)
+  vozMs        ${r.vozMsTotal} ms   [minVozMs=${MIN_VOZ}]
+  acciones VAD ${r.acciones.length ? JSON.stringify(r.acciones) : 'ninguna'}
+  pista        aec=${s.echoCancellation} ns=${s.noiseSuppression} agc=${s.autoGainControl} sr=${s.sampleRate}`
+}
+function volcarReporte(){
+  $('out').value =
+`REPORTE DE AUDIO — hermes-voice
+fecha       ${new Date().toISOString()}
+agente      ${navigator.userAgent}
+config VAD  umbral=${UMBRAL} silencioMs=${POR_DEFECTO.silencioMs} maxMs=${POR_DEFECTO.maxMs} minVozMs=${MIN_VOZ}
+
+${bloque('1 AMBIENTE (silencio)', datos.ambiente)}
+
+${bloque('2 VOZ', datos.voz)}
+
+${bloque('3 ECO con AEC (default app)', datos.ecoAec)}
+
+${bloque('3 ECO sin AEC', datos.ecoSinAec)}
+`
+}
+$('copiar').onclick = () => { $('out').select(); document.execCommand('copy'); $('copiar').textContent='Copiado'
+  setTimeout(()=>$('copiar').textContent='Copiar reporte',1200) }
+$('reset').onclick = () => { for(const k in datos) delete datos[k]
+  for(const i of [1,2,3]){ $('r'+i).innerHTML=''; delete $('r'+i).dataset.prev }
+  volcarReporte() }
+volcarReporte()
+</script>
+</body>
+</html>
