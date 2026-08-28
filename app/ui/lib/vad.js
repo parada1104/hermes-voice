@@ -11,9 +11,16 @@
  */
 
 const POR_DEFECTO = {
+  // Umbral validado midiendo el micrófono real: sala en silencio pico 0.00392,
+  // voz p50 0.05585 — margen de 21x. No hace falta tocarlo.
   umbral: 0.02,      // energía RMS mínima para considerar que hay voz
-  silencioMs: 900,   // silencio sostenido que cierra la frase
-  maxMs: 25000,      // techo: nadie dicta más de esto de un tirón
+  // 900 ms cerraba el turno apenas dudabas buscando la palabra. Cada ms de más
+  // acá es latencia que pagan TODOS los turnos antes de que el agente arranque:
+  // 1500 es el punto donde se puede pensar sin que la app te apure.
+  silencioMs: 1500,  // pausa que se tolera antes de dar la frase por terminada
+  // El techo no tiene que respetar la ventana de 30 s de Whisper: verificado
+  // contra el oMLX, procesa long-form (40,32 s -> 3 segmentos hasta 39,84).
+  maxMs: 45000,      // techo: nadie dicta más de esto de un tirón
   minVozMs: 300,     // menos que esto es un golpe de ruido, no una frase
 }
 

@@ -89,3 +89,33 @@ test('no revienta con entrada vacía', () => {
   assert.strictEqual(energiaRms(null), 0)
   assert.strictEqual(energiaRms([]), 0)
 })
+
+/* ── Valores por defecto: se prueban por comportamiento, no por número ── */
+
+const { POR_DEFECTO } = require('./vad.js')
+
+test('una pausa de 1.2s para pensar NO cierra la frase', () => {
+  // Robert: "muchas veces se me corta, no puedo hablar libremente". Con
+  // silencioMs=900 cualquier duda al buscar la palabra cerraba el turno.
+  const d = new DetectorVoz()
+  const r = correr(d, [...voz(10), ...silencio(12), ...voz(10)])
+  assert.strictEqual(r.accion, null, 'una pausa al pensar no es el final del turno')
+})
+
+test('una pausa larga de verdad SÍ cierra la frase', () => {
+  const d = new DetectorVoz()
+  const r = correr(d, [...voz(10), ...silencio(30)])
+  assert.strictEqual(r.accion, 'cortar')
+})
+
+test('el techo deja dictar bastante más de 30 segundos', () => {
+  // Verificado contra el oMLX: whisper-large-v3-turbo procesa long-form
+  // (40.32s -> 3 segmentos cubriendo hasta 39.84), así que el techo no tiene
+  // que quedarse en la ventana de 30s del modelo.
+  assert.ok(POR_DEFECTO.maxMs > 30000, `maxMs ${POR_DEFECTO.maxMs} corta antes de los 30s`)
+})
+
+test('el silencio que cierra da margen para dudar, sin volverse latencia absurda', () => {
+  assert.ok(POR_DEFECTO.silencioMs >= 1200, 'menos de 1.2s corta al que piensa')
+  assert.ok(POR_DEFECTO.silencioMs <= 2000, 'más de 2s es latencia que paga cada turno')
+})
