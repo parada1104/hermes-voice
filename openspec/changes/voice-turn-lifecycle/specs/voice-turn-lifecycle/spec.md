@@ -162,6 +162,32 @@ measurement, not specified here.
   cancel, resume, or discard. Only an explicit model decision on a
   subsequent turn, made using injected live-task context, SHALL invoke a
   lifecycle operation.
+- **Cancel SHALL NOT silently discard a partial result the agent had
+  already produced before being interrupted.** Per M1 (verified against a
+  live Hermes REPL, 2026-08-28: an interrupt at ~12s into a ~3000-word
+  request left a 771-character truncated partial persisted in the store,
+  ending exactly where the screen was cut), interrupting a delegation
+  does not erase what it had already generated. When a cancel produces
+  such a partial, it SHALL reach the user through the same channel a
+  timeout partial does today (`informeParcial`), rather than being
+  dropped, matching the existing project decision that discarding an
+  available partial is the worst outcome (`_esperarTurno`'s recorded
+  rationale, "tirarlo era el peor desenlace posible").
+  - **This is not a fencing exception.** Fencing still holds: the
+    interrupted turn's result never gets to speak *on its own* through
+    the normal `speech.frase`/`respuesta` completion path. Surfacing the
+    partial happens as the **result of the cancel operation itself** —
+    a distinct, user-initiated turn (the user asked to cancel; the
+    partial is the answer to that ask), not a resurfacing of the
+    original fenced turn.
+  - Surfacing a partial SHALL NOT upgrade the reported cancel outcome:
+    a path that could only achieve `stopped-waiting` still reports
+    `stopped-waiting` even when a partial is attached, and a partial
+    SHALL NOT be presented as if more work had completed than actually
+    did.
+  - When no partial is available for a cancelled task, nothing SHALL be
+    invented or implied in its place; the cancel outcome is reported
+    with no partial content attached.
 
 #### Scenario: Cancel reports cancelled-for-real only when work actually stopped
 
@@ -218,6 +244,44 @@ measurement, not specified here.
   injected context
 - **AND** no cancellation outcome (`cancelled-for-real`,
   `stopped-waiting`, `cannot-cancel-this-path`) is reported for it
+
+#### Scenario: A cancel that produces a partial surfaces it to the user
+
+- **GIVEN** the user asks to cancel a live task, and interrupting it
+  leaves a truncated partial persisted (as measured against the Orca
+  worker path via `orca.interrumpir`, e.g. store row `122502`, 771
+  characters of a ~18,000-character request, cut exactly where the
+  interrupt landed)
+- **WHEN** the cancel operation completes
+- **THEN** the partial reaches the user through the same channel a
+  timeout partial does today (`informeParcial`)
+- **AND** the partial is presented as the result of the cancel the user
+  asked for, not as an unprompted resurfacing of the original turn
+- **AND** the reported cancel outcome (e.g. `cancelled-for-real`) is not
+  upgraded or inflated because a partial happened to be available
+
+#### Scenario: A cancel with no partial available invents nothing
+
+- **GIVEN** the user asks to cancel a live task on a path where no
+  partial was captured (e.g. the work had not yet produced any output,
+  or the path has no mechanism to retain partial output)
+- **WHEN** the cancel operation completes
+- **THEN** the reported cancel outcome is delivered with no partial
+  content attached
+- **AND** no filler, invented summary, or implied progress is presented
+  in place of a partial
+
+#### Scenario: Fencing still holds even when a partial is surfaced via cancel
+
+- **GIVEN** a turn is fenced and its underlying delegation is then
+  cancelled, producing a partial
+- **WHEN** the partial is surfaced to the user as the result of the
+  cancel operation
+- **THEN** the fenced turn still does not speak on its own through the
+  normal `speech.frase`/`respuesta` completion path
+- **AND** the only path by which the partial reaches the user is the
+  cancel operation's own result channel (`informeParcial`), not a
+  resumption of the fenced turn's original delivery
 
 ### Requirement: Silence is the correct outcome when there is nothing to say
 

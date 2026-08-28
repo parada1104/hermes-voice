@@ -14,7 +14,7 @@ Delegation paths affected: **Orca worker (PRIMARY)**, **headless Hermes CLI (FAL
 
 | Path | Entry | Registered today | Killable after this change | Honest outcome |
 |---|---|---|---|---|
-| Orca worker | `gestorWorker.delegar` (`connector.js:632`) | No | Only if measurement **M1** passes | `cancelada` if M1 passes, else `detenida` |
+| Orca worker | `gestorWorker.delegar` (`connector.js:632`) | No | **Yes — M1 PASSED** (`orca terminal send --interrupt`) | `cancelada`, plus a partial when one exists (D11) |
 | Hermes CLI | `delegarHermesCli` (`connector.js:639`) | **Yes** (`:831`/`:846`, throws `cancelada` at `:839`) | Yes, already | `cancelada` |
 | Hermes API | `delegarHermesApi` (`connector.js:641`) | No | No — the run lives on `:8642`; we only stop polling | `detenida` |
 | Pi | `delegarPi` (`connector.js:646`, `:911-925`) | No | Yes — swap `execFileAsync` for a child + `procesosDelegacion.registrar` | `cancelada` |
@@ -53,7 +53,7 @@ Fencing covers **all four live paths**; killability is per path and is never imp
 **Verified blocker not in the exploration**: `speech.frase` calls `pararContinuo()` (`index.html:927`), which **releases the microphone stream** (`:1198`). In continuous mode the mic is off while Hermes speaks, so `bargeIn()` could not fire even if the `modo==='cont'` guard at `:1225` were removed.
 **Choice**: while audio is playing, keep `contStream` and the `AudioContext` analyser alive in a **monitor-only** loop (no `MediaRecorder`, no partials, no STT) that fires barge-in on **sustained** voice (`>= minVozMs` of consecutive frames above threshold), then `detenerAudio()` + `audioTurnoActual += 1` + `syncContinuo()`.
 **Alternatives**: reuse `DetectorVoz` unchanged with a single-frame trigger (rejected — an isolated 0.115 spike was measured at audio start and would self-trigger); rely on browser AEC alone (rejected — the 600/1200 ms anti-feedback cooldown at `:963` exists precisely because self-echo was observed).
-**Open measurement M2**: the barge-in threshold during playback must be measured on the real speaker/mic pair, exactly as `vad.js:14-16` records its 0.02. Until measured, the monitor ships **disabled by default** behind a flag rather than shipping a self-triggering guess.
+**Open measurement M3**: the barge-in threshold during playback must be measured on the real speaker/mic pair, exactly as `vad.js:14-16` records its 0.02. Until measured, the monitor ships **disabled by default** behind a flag rather than shipping a self-triggering guess.
 
 ### D5 — "Do nothing" must be an explicit outcome, not an empty one
 
@@ -64,9 +64,14 @@ Fencing covers **all four live paths**; killability is per path and is never imp
 ### D6 — Three-way honesty contract, with a code-owned claim clause
 
 ```js
-// { resultado, jobId, via, detalle }
-resultado: 'cancelada' | 'detenida' | 'no-cancelable'
-via:       'proceso' | 'interrupt' | 'fence' | 'ninguno'
+// daemon/lifecycle.js
+{
+  resultado: 'cancelada' | 'detenida' | 'no-cancelable',  // the CLAIM
+  via:       'proceso' | 'interrupt' | 'fence' | 'ninguno',
+  jobId,
+  parcial:   null | { texto, herramientas, avances },     // the EVIDENCE — never the claim
+  detalle:   '',
+}
 ```
 
 | `resultado` | Claim clause (code-owned, Spanish, injected verbatim) |
@@ -77,6 +82,8 @@ via:       'proceso' | 'interrupt' | 'fence' | 'ninguno'
 
 **Choice**: the layer receives the enum and **must include the mapped clause verbatim**; it may add surrounding context, never restate the claim.
 **Alternatives**: describe the enum in the prompt and let the model phrase it (rejected: the failure being fixed *is* the system overclaiming, and `capa.js:21-49` records that prompt rules alone did not hold — gemma4 kept answering "lo tengo anotado" without delegating).
+
+**`resultado` and `parcial` are separate fields on purpose.** `resultado` is computed from what the kill mechanism actually did; `parcial` is computed from what the store actually holds. Neither reads the other. A path that can only reach `detenida` still reports `detenida` when a partial is attached, because the code that sets `resultado` never sees `parcial`. The claim clause alone is not the safeguard — the shape is (D11).
 
 ### D7 — Single-active-session enforced at WS message acceptance
 
@@ -115,23 +122,58 @@ via:       'proceso' | 'interrupt' | 'fence' | 'ninguno'
 **If every candidate fails (1)**: no shape ships. Lifecycle operations fall back to a non-model path (explicit UI action) and the model keeps one tool — an honest degradation rather than a degraded router. `openspec/config.yaml` warns that small models degrade fast as tools multiply; this rule makes that warning falsifiable instead of decorative.
 **This design deliberately names no winner.** The measurement has not been run.
 
-## Measurements not yet run (gates, not assumptions)
+### D11 — A cancel's partial is the cancel turn's own result, not a resurfacing
 
-**M1 — Orca `--interrupt` against a live Hermes REPL** (gates the Slice 3 Orca path):
+M1 established that an interrupt does not erase what the agent already generated: store row `122502` held a 771-character truncated partial of a ~18,000-character request, cut exactly where the interrupt landed. That partial is work the user already paid for.
 
-1. `orca terminal create --command hermes` (the shape `comandoWorker` produces); wait for the prompt via `tareaTerminada`.
-2. Send a request that runs ≥60 s. After ~10 s: `orca terminal send --terminal <handle> --interrupt`.
-3. Assert, in order: (a) `terminal read --screen` still answers → terminal alive; (b) `tareaTerminada` true within 10 s → the turn stopped; (c) a following `enviar(handle, …)` produces a new store row under the same `agentSessionId` → REPL usable and thread intact; (d) no final assistant row appears for the interrupted turn → it really stopped, rather than continuing.
+**Choice**: the partial travels in `parcial` (D6) and is rendered through `informeParcial` — the same channel `_esperarTurno` already uses for its timeout partials (`worker.js:192-196`). It is delivered as the answer to the cancel the user just asked for.
 
-| Result | Slice 3 Orca path | Reported outcome |
+**Two turns, and they must not be collapsed.** Fencing revokes the **interrupted turn's** right to speak on its own; the partial is delivered as the result of the **user's own cancel turn**. Different turns, different channels:
+
+| | Interrupted turn | Cancel turn |
 |---|---|---|
-| a+b+c+d pass | `orca.interrumpir(handle)` ships | `cancelada` |
-| a+b pass, c fails (REPL wedged) | fence only | `detenida` |
-| a fails (terminal dies) | fence only | `detenida` |
+| Who initiated | the model, earlier | the user, now |
+| Channel | `speech.frase`/`respuesta` — **gated by the fence (D1)** | the cancel operation's own result |
+| After fencing | never speaks on its own | speaks, because the user asked |
 
-Kill-and-recreate is **not** adopted as the fallback: PR #2 (`de5f8c3`) fixed worker churn that was killing the REPL on every `activate`, and `precalentar` deliberately no longer evicts (`worker.js:204-219`). Recreation stays an explicit, user-requested last resort after a `detenida`.
+A future reader who collapses these two will "correctly" conclude the partial must be dropped, and will reintroduce exactly the loss this decision exists to prevent. The fence gate keys on `payload.jobId` for job-completion deliveries; the cancel result carries no completing `jobId`, so the two cannot collide by construction.
 
-**M2 — barge-in threshold during playback** (gates D4's default-on). Record in `openspec/changes/voice-turn-lifecycle/mediciones.md` before the dependent slice starts.
+**Alternatives**: drop the partial as fenced content (rejected — it is the same loss `_esperarTurno` already refused, on the record: *"tirarlo era el peor desenlace posible"*, after a turn given up at 360 s turned out to have six web searches done); deliver it by lifting the fence on the original turn (rejected — that resumes the interrupted turn's right to speak unprompted, which is the behaviour being fixed).
+
+**Guard**: when no partial exists, `parcial` is `null` and nothing is invented. `informeParcial` already returns falsy on an empty turn, so the empty case is the existing code path, not a new branch.
+
+### D12 — `interrumpir` bypasses `GestorWorker.cola` deliberately
+
+**Choice**: `GestorWorker.interrumpir(sesionId)` is **not** wrapped in `_enFila`. It calls `orca.interrumpir(handle)` directly and sets an abort flag that `_esperarTurno`'s poll loop reads on its next tick, returning `{ ...resumenTurno(ultimas), incompleto: true, motivo: 'interrumpido' }` — the existing partial shape, with a third `motivo` alongside `repl-libre` and `timeout`.
+**Alternatives**: queue it like `delegar`/`precalentar`/`cerrar` (rejected: `this.cola` serializes every operation, so a queued interrupt waits behind the very delegation it is meant to interrupt — a deadlock until the timeout it was supposed to pre-empt); kill the poll from outside (rejected: leaves `this.actual` and the store watermark inconsistent).
+**Rationale**: `_enFila` (`worker.js:94-99`) exists to stop two `activate` calls from racing over one worker. An interrupt does not create, replace, or close a worker — it writes one byte to a terminal that is already the current one — so it is outside the invariant the queue protects. This is the one exception, and it is why `interrumpir` must never create or recreate a terminal.
+
+## Measurements
+
+### M1 — Orca `--interrupt` against a live Hermes REPL · **RUN 2026-08-28 · PASS**
+
+Full record: `openspec/changes/voice-turn-lifecycle/mediciones.md`. Hermes Agent v0.20.5 on `deepseek-v4-flash`, interrupt sent ~12 s into a ~3000-word generation; the wire wrote `{"accepted": true, "bytesWritten": 1}` — one byte, `0x03`.
+
+| | Assertion | Result |
+|---|---|---|
+| a | Terminal still alive | PASS — `read --screen` answered `ok: true` |
+| b | Turn stopped within 10 s | PASS — immediate; idle prompt returned (`✓ 0s`) |
+| c | REPL usable, thread intact | PASS — a follow-up recalled the pre-interrupt request (row `122504`) |
+| d | **No *complete* answer appears for the interrupted turn. A truncated partial row MAY be persisted, and is desirable.** | PASS — row `122502`, 771 chars of a ~18,000-char request, cut where the screen was |
+
+Assertion (d) is restated from this design's earlier wording (*"no final assistant row appears"*), which was wrong: an `assistant` row **is** persisted. What distinguishes a stopped turn from a continuing one is completeness, not the row's existence. The persisted partial is not a leak — it is the input to D11.
+
+**Consequences**: `orca.interrumpir(handle)` ships unconditionally; Slice 3's Orca half is no longer gated and no longer ships flag-off. The reported outcome for the Orca worker path is `cancelada` — the strongest rung of the contract. `detenida` remains in the contract for `delegarHermesApi`, whose run genuinely survives on `:8642`.
+
+**Retired risk**: the REPL survives Ctrl-C, so the keep-hot design that PR #2 (`de5f8c3`) restored is intact and no worker churn is reintroduced. The concern that motivated rejecting kill-and-recreate does not materialise; kill-and-recreate is not needed on any path and is not built.
+
+Incidental, and worth recording: while generating, Hermes' own status bar reads `msg=interrupt · /queue · /bg · /steer · Ctrl+C cancel`. Ctrl+C is the agent's documented cancel affordance, so this is a supported input rather than a lucky signal.
+
+### Still open
+
+**M2 — decision-tree baseline** (gates D10's tool shape and Slice 4). Must be recorded `--live` before any change to `VOICE_PROMPT`, the tool set, or the capa model/provider; once those change it cannot be reconstructed.
+
+**M3 — barge-in energy threshold during playback** on the real speaker/mic pair (gates D4's default-on, i.e. Slice 1). Distinct from M2: it is an audio measurement, not a routing one. `mediciones.md` currently lists Slice 1's default-on under M2; that gate belongs to M3.
 
 ## Data Flow
 
@@ -143,14 +185,19 @@ UI            daemon/server.js        connector.js         GestorWorker/orca    
  |-- voz "cortalo" ->|                     |                      |                     |
  |                   |-- procesarTurno --->| (live-task context injected, not a tool)   |
  |                   |                     |-- lifecycle op ----->|                     |
- |                   |                     |   (M1 pass: --interrupt / else: fence)     |
- |                   |<-- {resultado,via}--|                      |                     |
+ |                   |                     |   interrumpir(): 0x03, OUTSIDE this.cola (D12)
+ |                   |                     |                      |-- --interrupt ----->|
+ |                   |                     |                      |<- truncated partial-|
+ |                   |                     |<- {resultado:'cancelada', parcial:{…}} ----|
+ |                   |<- claim clause + informeParcial(parcial) --|                     |
  |                   |-- job: fenced ----->  jobs.js (persisted, broadcast as card state)
- |<- respuesta with code-owned claim clause |                      |                     |
+ |<- respuesta: the CANCEL turn's result (claim + partial) — D11                        |
  |                   |                     |                      |--- late answer ---->|
  |                   |  broadcastSession gate: job fenced -> speech.frase/respuesta DROPPED
  |                   |-- job: discarded (resultado kept as thread context, never spoken)
 ```
+
+The `respuesta` that carries the partial belongs to the **cancel turn**; the drop below it applies to the **interrupted turn**. Both appear here on purpose — they are the two turns D11 forbids collapsing.
 
 Barge-in (no daemon involvement, by design):
 
@@ -166,9 +213,11 @@ mic monitor (sustained voice) -> detenerAudio() -> audioTurnoActual+1 -> descart
 | `daemon/server.js` | Modify | Fence gate in `broadcastSession`; `session_busy` rejection; wait-notice user-activity check in `lanzarDelegacion`'s `latido` |
 | `daemon/connector.js` | Modify | Live-task context injection into `apiMessages` (`:1048`); `silencio` branch; lifecycle op dispatch; `delegarPi` child registration; `delegarOrca` guard |
 | `daemon/procesos.js` | Modify | Accept the Pi child; no API change to `cancelar`/`fueCancelado` |
-| `daemon/orca.js` | Modify | `interrumpir(handle)` — **only if M1 passes** |
+| `daemon/orca.js` | Modify | `interrumpir(handle)` on `terminal send --interrupt` — **ships, M1 passed** |
+| `daemon/worker.js` | Modify | `GestorWorker.interrumpir(sesionId)` outside `_enFila` (D12); `motivo:'interrumpido'` as a third partial reason in `_esperarTurno` |
+| `daemon/store-hermes.js` | Unchanged | `resumenTurno`/`informeParcial` already produce the partial shape D11 needs |
 | `daemon/espera.js` | Unchanged | Stays pure; the user-activity check lives at the caller |
-| `daemon/lifecycle.js` | Create | Enum → claim-clause map, outcome shape, per-path capability table |
+| `daemon/lifecycle.js` | Create | Outcome shape with `resultado` and `parcial` as independent fields, enum → claim-clause map, per-path capability table |
 | `daemon/bench/arbol.js` | Create | Harness runner (`--live` / `--replay`) |
 | `daemon/bench/turnos.json` | Create | Labelled turn set |
 | `daemon/bench/baseline-*.json` | Create | Dated baselines, recorded before any prompt change |
@@ -180,11 +229,16 @@ mic monitor (sustained voice) -> detenerAudio() -> audioTurnoActual+1 -> descart
 | Layer | What | Approach |
 |---|---|---|
 | Unit | job state transitions; `reconciliarJobs`/`podarJobs` with `fenced`+`discarded`; enum → claim clause; sustained-voice detector | `node --test`, pure functions, no I/O |
+| Unit | **`resultado` is computed without reading `parcial`**: attaching a partial to a `detenida` leaves it `detenida` | build the outcome for a non-killable path with a partial present |
 | Unit | fence gate: `speech.frase`/`respuesta` dropped for a fenced job, `delegation.status` still delivered | fake `clients` map, as existing `server` tests do |
 | Integration | each of the four paths: fenced result never broadcast after completion | injected fake `orca`/`execFile`, per `GestorWorker`'s existing injection seam |
+| Integration | **interrupt returns the partial**: `_esperarTurno` exits with `motivo:'interrumpido'` and the rows read so far | fake `orca.interrumpir` + fake store, no live REPL |
+| Integration | **`interrumpir` is not queued** (D12): it resolves while a `delegar` is mid-poll | fake `orca` whose `leerPantalla` never settles until interrupted |
+| Integration | **partial reaches the user as the cancel turn's result** while the interrupted turn stays fenced | assert `informeParcial` output in the cancel response and no `speech.frase` for the fenced `jobId` |
+| Integration | cancel with no partial attaches nothing and invents nothing | empty store rows → `parcial: null`, claim clause only |
 | Integration | `session_busy` rejection; the active session's worker survives | two fake WS clients |
 | Replay | decision-tree regression over recorded responses | `daemon/test-arbol.test.js` |
-| Manual (gates) | **M1** Orca interrupt, **M2** barge-in threshold | recorded in `mediciones.md` before dependent slices |
+| Manual (gates) | **M2** decision-tree baseline, **M3** barge-in threshold | recorded in `mediciones.md` before dependent slices (**M1 done**) |
 
 All tests are written RED first (strict TDD, `openspec/config.yaml` `rules.apply.tdd`).
 
@@ -202,11 +256,14 @@ All tests are written RED first (strict TDD, `openspec/config.yaml` `rules.apply
 
 ## Migration / Rollout
 
-No data migration. Existing job records lack the new states and reconcile unchanged. Slice order: 0 (harness baseline, unreconstructable later) → 1 (client reflex) → 2 (fence) → 5 (session gate, independent) → 3 (real kill, gated on M1) → 4 (lifecycle ops, gated on Slice 0 + D10). Slices 1 and 3's Orca half ship behind flags until M2 and M1 are recorded.
+No data migration. Existing job records lack the new states and reconcile unchanged. Slice order: 0 (harness baseline, unreconstructable later) → 1 (client reflex) → 2 (fence) → 5 (session gate, independent) → 3 (real kill) → 4 (lifecycle ops, gated on Slice 0 + D10).
+
+Slice 3 is **no longer gated**: M1 passed, so its Orca half ships on by default along with the CLI/Pi halves. Slice 1 still ships flag-off until M3 is recorded.
 
 ## Open Questions
 
-- [ ] **M1** Orca `--interrupt` against a live Hermes REPL — unrun; gates the Slice 3 Orca path and its reported outcome.
-- [ ] **M2** barge-in energy threshold during playback on the real speaker/mic pair — unrun; gates D4 defaulting to on.
+- [ ] **M2** decision-tree baseline — unrun; gates D10 and Slice 4, and cannot be reconstructed after any prompt/tool/model change.
+- [ ] **M3** barge-in energy threshold during playback — unrun; gates D4 defaulting to on.
 - [ ] **D10** tool shape — deliberately undecided; the winner comes from Slice 0's data under the stated rule.
 - [ ] Does a `retomar` on an already-`discarded` job re-speak the retained result, or only surface it as text? Leaning text-only (re-speaking a stale answer is the same class of defect), to confirm in tasks.
+- [ ] Do the other three paths produce a partial worth surfacing on cancel? Verified for the Orca worker path only (M1). `delegarHermesCli`'s SIGTERM'd child loses its stdout, and `delegarPi` uses `--print`, so both plausibly yield `parcial: null` — the D11 empty case, not a defect. Confirm per path when Slice 3 wires them, and record it rather than assuming.
