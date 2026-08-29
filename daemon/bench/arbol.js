@@ -34,6 +34,24 @@
 const path = require('path')
 const fs = require('fs')
 
+// El daemon recibe sus variables por direnv; este bench se corre suelto, sin
+// ese contexto, así que carga el `.env` de la raíz por su cuenta. Sin esto
+// `--live` falla por falta de key aunque el archivo esté ahí al lado.
+// No pisa lo que ya venga del entorno: quien exporta a mano manda.
+function cargarEnv() {
+  const archivo = path.join(__dirname, '..', '..', '.env')
+  let texto
+  try { texto = fs.readFileSync(archivo, 'utf8') } catch (_) { return }
+  for (const linea of texto.split('\n')) {
+    const m = linea.match(/^\s*(?:export\s+)?([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/)
+    if (!m) continue
+    const clave = m[1]
+    if (process.env[clave] !== undefined) continue
+    process.env[clave] = m[2].trim().replace(/^["']|["']$/g, '')
+  }
+}
+cargarEnv()
+
 const {
   VOICE_PROMPT, ORCA_TOOL, TOOL_DELEGAR, llmCerebras, llmCerebrasStream, normalizarToolCall,
 } = require('../connector.js')

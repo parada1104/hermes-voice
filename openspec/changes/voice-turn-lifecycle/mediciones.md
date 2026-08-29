@@ -73,23 +73,53 @@ had six web searches already done. An interrupted turn is the same situation.
 
 ## M2 — Decision-tree baseline
 
-**Status**: NOT RUN
+**Status**: RUN — 2026-08-29
 **Gates**: Slice 4 (lifecycle tool shape, design decision D10)
-**Blocking**: must be recorded `--live` **before** any change to `VOICE_PROMPT`,
-the tool set, or the model. Once those change, the baseline cannot be reconstructed.
+**Artifact**: `daemon/bench/baseline-2026-08-29.json`
+**Command**: `node daemon/bench/arbol.js --live`
 
 > Slice 1's default-on was previously listed here. It is a different measurement —
 > an audio threshold, not a routing one — and moved to M3 below.
 
-**Harness ready, run not attempted successfully yet**: `daemon/bench/arbol.js`
-(`--live`/`--replay`) and `daemon/bench/turnos.json` exist and are covered by
-`daemon/test-arbol.test.js` (pure-classifier replay, no network). A `--live`
-attempt on 2026-08-29 could not proceed: `NAN_BUILDERS_API_KEY` was not present
-in this worktree's environment (checked `.envrc`, `.env`, `ai-specs.env` in this
-worktree and the main worktree, `process.env`, and `direnv exec .`). No baseline
-was fabricated — per design, an invented M2 number is worse than none, since
-every later regression check would compare against a lie. Provision the key (or
-explicitly decide to defer) before re-attempting `node daemon/bench/arbol.js --live`.
+### Result
+
+| Branch | Baseline | Note |
+|---|---|---|
+| `responder` | 4/4 (100%) | |
+| `delegar` | 7/7 (100%) | |
+| `cancelar` | 0/3 (0%) | **Expected.** No cancel tool exists yet |
+| `nada` | 0/3 (0%) | **Expected.** Silence is blocked twice today |
+
+17 turns · 2 repairs · tool-call format valid 100% · TTFB p50 2186 ms / p90 6991 ms.
+
+### Reading the zeros
+
+`cancelar` and `nada` at 0% are not failures. They are the point of the
+measurement: empirical proof that neither branch is reachable before this change
+touches anything. `cancelar` has no tool (`connector.js:147` registers only
+`delegar_a_orca`), and silence is prevented twice — `turnoVacio`
+(`daemon/promesas.js:93`) forces a rescue re-prompt, and `connector.js:1133`
+falls back to a spoken `'No entendí, señor.'`.
+
+This turns a code reading into a number: after Slice 4, these two rows must move
+off zero, and `responder`/`delegar` must not regress from 4/4 and 7/7.
+
+### Corroboration of the historical hand measurement
+
+`daemon/capa.js:21-49` records a hand-taken run for the same provider/model:
+*"7/7 delegación · 3/3 continuidad · TTFB p50 2566ms / p90 3189ms"*.
+
+This automated run reproduces **7/7 delegación exactly**, which is good evidence
+the harness measures the same thing the prose comment measured. TTFB p50 came out
+slightly better (2186 ms vs 2566 ms); **p90 came out materially worse (6991 ms vs
+3189 ms)**. Different day, different network, and the historical figure was taken
+by hand, so this is recorded as an observation rather than a regression — but p90
+is worth re-checking on the next `--live` run before reading anything into it.
+
+### Regression rule
+
+A later run regresses if per-branch accuracy falls below baseline minus tolerance,
+**or** if the repair count rises above 2. TTFB is reported, not gating.
 
 ---
 
