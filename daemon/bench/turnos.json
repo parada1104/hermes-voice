@@ -1,0 +1,106 @@
+[
+  {
+    "id": "delegar-vault-1",
+    "rama": "delegar",
+    "entrada": "Registrá en el vault que terminé de escribir el informe de gastos de agosto."
+  },
+  {
+    "id": "delegar-trello-1",
+    "rama": "delegar",
+    "entrada": "Fijate en el tablero de Trello si hay tareas nuevas asignadas a mí."
+  },
+  {
+    "id": "delegar-notas-1",
+    "rama": "delegar",
+    "entrada": "Buscá en mis notas la contraseña del router de casa."
+  },
+  {
+    "id": "delegar-repo-1",
+    "rama": "delegar",
+    "entrada": "Decile al agente que revise el repositorio hermes-voice y me diga si hay tests rotos."
+  },
+  {
+    "id": "delegar-pantalla-1",
+    "rama": "delegar",
+    "entrada": "Mirá la pantalla y contame si el build terminó de correr."
+  },
+  {
+    "id": "delegar-continuidad-1",
+    "rama": "delegar",
+    "historial": [
+      { "role": "user", "content": "Anotá que el lunes tengo turno con el dentista a las 9." },
+      { "role": "assistant", "content": "Tomado nota, señor. ¿Algo más antes de pasárselo al agente?" }
+    ],
+    "entrada": "Eso es todo, pasaselo al agente para que lo agende."
+  },
+  {
+    "id": "delegar-continuidad-2",
+    "rama": "delegar",
+    "historial": [
+      { "role": "user", "content": "Anotá que hay que comprar café y filtros." },
+      { "role": "assistant", "content": "Anotado, señor: café y filtros." },
+      { "role": "user", "content": "También anotá pilas AA." },
+      { "role": "assistant", "content": "Sumado, señor: café, filtros y pilas AA." }
+    ],
+    "entrada": "Ahora sí, pasale la lista completa al agente para que la registre."
+  },
+  {
+    "id": "responder-hora-1",
+    "rama": "responder",
+    "entrada": "¿Qué hora es, más o menos?"
+  },
+  {
+    "id": "responder-identidad-1",
+    "rama": "responder",
+    "entrada": "¿Quién sos vos?"
+  },
+  {
+    "id": "responder-charla-1",
+    "rama": "responder",
+    "entrada": "Gracias por la ayuda de recién."
+  },
+  {
+    "id": "responder-contexto-1",
+    "rama": "responder",
+    "historial": [
+      { "role": "assistant", "content": "El agente revisó el vault, señor: hay tres notas pendientes de esta semana." }
+    ],
+    "entrada": "¿Cuántas notas dijiste que había?"
+  },
+  {
+    "id": "cancelar-tarea-1",
+    "rama": "cancelar",
+    "historial": [
+      { "role": "assistant", "content": "Voy a revisarlo con el agente adecuado, señor." }
+    ],
+    "entrada": "Cortá esa tarea, ya no la necesito."
+  },
+  {
+    "id": "cancelar-espera-1",
+    "rama": "cancelar",
+    "historial": [
+      { "role": "assistant", "content": "Voy a consultarlo con el agente, señor, deme un momento." }
+    ],
+    "entrada": "Dejá de esperar la respuesta, no importa ya."
+  },
+  {
+    "id": "cancelar-general-1",
+    "rama": "cancelar",
+    "entrada": "Cancelá lo que le pediste al agente hace un rato."
+  },
+  {
+    "id": "nada-relleno-1",
+    "rama": "nada",
+    "entrada": "Eh... no, nada, dejalo."
+  },
+  {
+    "id": "nada-relleno-2",
+    "rama": "nada",
+    "entrada": "Mmm, olvidalo, no era nada."
+  },
+  {
+    "id": "nada-silencio-1",
+    "rama": "nada",
+    "entrada": "..."
+  }
+]

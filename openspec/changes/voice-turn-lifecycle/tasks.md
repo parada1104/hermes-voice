@@ -54,11 +54,11 @@ new spec scenarios' worth of coverage, instead of removing work as a failed M1 w
 
 ## Phase 0: Slice 0 — Decision-tree measurement harness (FIRST, unreconstructable)
 
-- [ ] 0.1 RED: create `daemon/test-arbol.test.js` asserting `daemon/bench/arbol.js --replay` computes per-branch accuracy (respond/delegate/cancel/do-nothing), repair count, tool-call format validity, TTFB p50/p90 over a fixture turn set — fails (no `arbol.js` yet).
-- [ ] 0.2 GREEN: create `daemon/bench/arbol.js` (`--live`/`--replay` modes per D9) and `daemon/bench/turnos.json` (labelled turn set covering respond/delegate/cancel/do-nothing branches, plus existing delegate/answer turns unchanged per D10's turn set requirement).
-- [ ] 0.3 **M2**: run `node daemon/bench/arbol.js --live` against the **current** one-tool/two-branch prompt/tool set (before any prompt/tool/model change) and commit the dated result to `daemon/bench/baseline-<date>.json`. Record status in `mediciones.md`. Unreconstructable after Slice 4 changes `VOICE_PROMPT` — must run before 5.x starts.
-- [ ] 0.4 REFACTOR: extract the pure classifier (branch scoring, regression comparison against baseline minus tolerance) so `--replay` runs deterministically in CI without network calls.
-- [ ] 0.5 `mediciones.md` already records M1 as RUN/PASS (2026-08-28); confirm M2 (0.3) and M3 (Phase 1) sections stay accurate as their tasks complete — no separate file creation needed, it exists.
+- [x] 0.1 RED: create `daemon/test-arbol.test.js` asserting `daemon/bench/arbol.js --replay` computes per-branch accuracy (respond/delegate/cancel/do-nothing), repair count, tool-call format validity, TTFB p50/p90 over a fixture turn set — fails (no `arbol.js` yet).
+- [x] 0.2 GREEN: create `daemon/bench/arbol.js` (`--live`/`--replay` modes per D9) and `daemon/bench/turnos.json` (labelled turn set covering respond/delegate/cancel/do-nothing branches, plus existing delegate/answer turns unchanged per D10's turn set requirement).
+- [ ] 0.3 **M2**: run `node daemon/bench/arbol.js --live` against the **current** one-tool/two-branch prompt/tool set (before any prompt/tool/model change) and commit the dated result to `daemon/bench/baseline-<date>.json`. Record status in `mediciones.md`. Unreconstructable after Slice 4 changes `VOICE_PROMPT` — must run before 5.x starts. **BLOCKED 2026-08-29**: `NAN_BUILDERS_API_KEY` is not available in this worktree/environment (checked `.envrc`, `.env`, `ai-specs.env` in both this worktree and the main worktree, `process.env`, and `direnv exec .` — the key resolves to absent everywhere). Per explicit instruction, no baseline was fabricated. Needs the key provisioned (or an explicit decision to defer M2) before this task and Phase 5/Slice 4 can proceed.
+- [x] 0.4 REFACTOR: extract the pure classifier (branch scoring, regression comparison against baseline minus tolerance) so `--replay` runs deterministically in CI without network calls.
+- [x] 0.5 `mediciones.md` already records M1 as RUN/PASS (2026-08-28); confirm M2 (0.3) and M3 (Phase 1) sections stay accurate as their tasks complete — no separate file creation needed, it exists. Confirmed: both sections still correctly read NOT RUN (M2 could not be run this session — see 0.3 blocker; M3 untouched, Phase 1 not started).
 
 ## Phase 1: Slice 1 — Client-side "callar" reflex (flag-gated on **M3**, not M2)
 

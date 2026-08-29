@@ -81,6 +81,16 @@ the tool set, or the model. Once those change, the baseline cannot be reconstruc
 > Slice 1's default-on was previously listed here. It is a different measurement —
 > an audio threshold, not a routing one — and moved to M3 below.
 
+**Harness ready, run not attempted successfully yet**: `daemon/bench/arbol.js`
+(`--live`/`--replay`) and `daemon/bench/turnos.json` exist and are covered by
+`daemon/test-arbol.test.js` (pure-classifier replay, no network). A `--live`
+attempt on 2026-08-29 could not proceed: `NAN_BUILDERS_API_KEY` was not present
+in this worktree's environment (checked `.envrc`, `.env`, `ai-specs.env` in this
+worktree and the main worktree, `process.env`, and `direnv exec .`). No baseline
+was fabricated — per design, an invented M2 number is worse than none, since
+every later regression check would compare against a lie. Provision the key (or
+explicitly decide to defer) before re-attempting `node daemon/bench/arbol.js --live`.
+
 ---
 
 ## M3 — Barge-in energy threshold during playback
