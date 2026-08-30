@@ -119,3 +119,34 @@ test('el silencio que cierra da margen para dudar, sin volverse latencia absurda
   assert.ok(POR_DEFECTO.silencioMs >= 1200, 'menos de 1.2s corta al que piensa')
   assert.ok(POR_DEFECTO.silencioMs <= 2000, 'más de 2s es latencia que paga cada turno')
 })
+
+/* ── Voz sostenida para barge-in (D4): dispara EN CUANTO hay voz sostenida,
+   no espera al silencio como DetectorVoz. Ver design.md D4 y mediciones.md M3. ── */
+
+const { MonitorVozSostenida } = require('./vad.js')
+
+test('un solo frame de voz NO dispara el barge-in (pico aislado de 0.115 medido al arrancar el audio)', () => {
+  const m = new MonitorVozSostenida()
+  const disparo = m.procesar(0.115, 0)
+  assert.strictEqual(disparo, false, 'un pico de una sola muestra no es el usuario hablando')
+})
+
+test('voz sostenida por >= minVozMs SÍ dispara el barge-in', () => {
+  const m = new MonitorVozSostenida()
+  let disparo = false, t = 0
+  for (let i = 0; i < 5 && !disparo; i++) { disparo = m.procesar(0.2, t); t += 100 }
+  assert.strictEqual(disparo, true, '400ms sostenidos de voz deben disparar el reflejo')
+})
+
+test('el disparo no llega si la voz se corta antes de sostenerse', () => {
+  const m = new MonitorVozSostenida()
+  assert.strictEqual(m.procesar(0.2, 0), false)
+  assert.strictEqual(m.procesar(0.2, 100), false)      // 100ms sostenidos: no alcanza minVozMs (300ms)
+  assert.strictEqual(m.procesar(0.001, 200), false)    // se corta la racha
+  assert.strictEqual(m.procesar(0.2, 300), false)      // vuelve a arrancar de cero, no acumula lo anterior
+})
+
+test('el umbral de energía es el mismo que usa el cierre por silencio, salvo que se lo pisen', () => {
+  const m = new MonitorVozSostenida()
+  assert.strictEqual(m.procesar(0.001, 0), false, 'por debajo del umbral no cuenta como voz')
+})

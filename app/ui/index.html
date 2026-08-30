@@ -447,6 +447,8 @@
 
 <script src="lib/vad.js"></script>
 <script src="lib/parcial.js"></script>
+<script src="lib/turno-audio.js"></script>
+<script src="lib/mic-boton.js"></script>
 <script>
 /* ===== Hermes Voice UI — fiel al kit v5.3 (app/root) ===== */
 const DAEMON = 'http://127.0.0.1:8471'
@@ -910,7 +912,7 @@ function connectWS(){
       const st=m.payload?.estado
       if(st==='escuchando'){ listening=true; setPill('escuchando'); micBtn.classList.add('rec') }
       else if(st==='transcribiendo'){ listening=true; setPill('escuchando'); pararContinuo() }
-      else if(st==='hablando'){ listening=false; setPill('hablando'); micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararContinuo() }
+      else if(st==='hablando'){ listening=false; setPill('hablando'); micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararOMantenerParaBargeIn() }
       else { listening=false; micBtn.classList.remove('rec','mute'); if(!offline) setPill('conectado'); syncContinuo() }
     }
     if(m.type==='transcripcion'){ inicioTransc(); pushTransc(m.payload.text) }  // parcial:true reemplaza la burbuja (inicioTransc es idempotente); el final la cierra en speech.frase/error
@@ -924,7 +926,7 @@ function connectWS(){
       return
     }
     if(m.type==='cancelled'){ detenerAudio(); finTransc(); setPill('idle'); return }  // el aviso lo emite delegation.status
-    if(m.type==='speech.frase'){ window.__speechCount=(window.__speechCount||0)+1; finTransc(); listening=false; micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararContinuo(); if(ttsOn) playWav(m.payload.audio, m.payload.turnId) }
+    if(m.type==='speech.frase'){ window.__speechCount=(window.__speechCount||0)+1; finTransc(); listening=false; micBtn.classList.remove('rec'); micBtn.classList.add('mute'); pararOMantenerParaBargeIn(); if(ttsOn) playWav(m.payload.audio, m.payload.turnId) }
     if(m.type==='tool.start'){
       if(window.__activeTool) window.__activeTool.fail('reemplazada por una nueva ejecución')
       window.__activeTool=addTool(m.payload||'delegación')
@@ -1028,23 +1030,28 @@ function playWav(b64, turno){
   if(!b64)return
   try{
     const t=Number(turno||uiTurnId||0)
-    if(t && t<audioTurnoActual) return          // frase de un turno ya superado
-    if(t>audioTurnoActual){ audioTurnoActual=t; descartarCola() }
+    if(!turnoVigente(t,audioTurnoActual)) return   // frase de un turno ya superado (lib/turno-audio.js)
+    if(esTurnoNuevo(t,audioTurnoActual)){ audioTurnoActual=t; descartarCola() }
     const url=URL.createObjectURL(new Blob([Uint8Array.from(atob(b64),c=>c.charCodeAt(0))],{type:'audio/wav'}))
     audioQ.push({url,turno:t,audio:null})
     nextAudio()
   }catch(e){}
 }
 function descartarCola(){ audioQ.splice(0).forEach(it=>{try{URL.revokeObjectURL(it.url)}catch(e){}}) }
+// Barge-in (D4): al cortar el audio, el turno interrumpido AVANZA. Sin este
+// bump, una frase todavía en vuelo para ese mismo número de turno pasaba el
+// guard de playWav (nunca era "más vieja") y terminaba sonando igual después
+// del corte. Ver app/ui/lib/test-bargein.test.js.
 function detenerAudio(){
   descartarCola()
   if(audioActual){ try{audioActual.pause()}catch(e){} try{URL.revokeObjectURL(audioActual.src)}catch(e){} audioActual=null }
   audioOn=false
+  audioTurnoActual=siguienteTurno(audioTurnoActual)
 }
 function nextAudio(){
   if(audioOn||!audioQ.length)return
   const item=audioQ.shift()
-  if(item.turno && item.turno<audioTurnoActual){ try{URL.revokeObjectURL(item.url)}catch(e){} return nextAudio() }
+  if(!turnoVigente(item.turno,audioTurnoActual)){ try{URL.revokeObjectURL(item.url)}catch(e){} return nextAudio() }
   audioOn=true
   const a=new Audio(item.url); audioActual=a
   let cerrado=false
@@ -1130,6 +1137,77 @@ function vigilarSilencio(recorder){
     try{ recorder.stop() }catch(e){}
   }
   vadTimer=setTimeout(tick,100)
+}
+
+// --- Monitor de barge-in durante la reproducción (design.md D4) ---
+//
+// BLOQUEANTE 1 (el mic no se PAUSA, se SUELTA): `pararContinuo()` más abajo
+// llama `contStream.getTracks().forEach(t=>t.stop())` — libera el hardware,
+// no lo pausa. Reabrirlo exige un `getUserMedia()` nuevo, con su latencia.
+// Sacar el guard de `modo==='cont'` del mousedown (arriba) no alcanza por sí
+// solo: cuando Hermes empieza a hablar, `pararContinuo()` YA apagó el mic
+// (fase `hablando` y `speech.frase`, más abajo), así que no queda nada
+// escuchando para que un VAD automático dispare. Este monitor es la pieza
+// que falta: reutiliza el mismo `AudioContext`/analizador de
+// `vigilarSilencio` pero SOBRE `contStream` sin soltarlo, mientras el audio
+// suena.
+//
+// BLOQUEANTE 2 (autoeco): con el AEC de Chromium puesto (el default de este
+// proyecto, `getUserMedia({audio:true})`) el eco del propio TTS midió 103ms
+// de voz sostenida — por debajo de `minVozMs` (300ms) — así que en teoría
+// `MonitorVozSostenida` no debería dispararse solo con el eco. Pero es UNA
+// medición, en UN parlante/mic. El cooldown anti-feedback de 600/1200ms (más
+// abajo, en el handler de `respuesta`) sigue intacto y no lo reemplaza este
+// monitor: son mecanismos distintos para el mismo riesgo.
+//
+// Por eso el monitor entero arranca APAGADO. Encenderlo antes de medir el
+// umbral real en el hardware de Robert (M3, mediciones.md, tasks.md 1.7)
+// sería enviar una adivinanza que puede autodispararse con el propio TTS.
+const BARGE_IN_MONITOR_ACTIVO = false   // default OFF — pendiente M3 (mediciones.md); NO tocar sin ese resultado
+
+let bargeInMonitorTimer=null, bargeInMonitorDet=null
+// Solo-monitor: nada de MediaRecorder, parciales ni STT acá. Únicamente mide
+// energía para decidir CUÁNDO cortar; la captura real de lo que diga Robert
+// la arranca `arrancarContinuo()` después del corte, igual que hoy.
+function iniciarMonitorBargeIn(){
+  if(!BARGE_IN_MONITOR_ACTIVO || bargeInMonitorTimer || !contStream || modo!=='cont') return
+  bargeInMonitorDet=new MonitorVozSostenida()
+  try{
+    if(!contAudioCtx || contAudioCtx.state==='closed'){
+      contAudioCtx=new (window.AudioContext||window.webkitAudioContext)()
+      contAnalizador=contAudioCtx.createAnalyser()
+      contAnalizador.fftSize=1024
+      contStreamVigilado=null
+    }
+    if(contStreamVigilado!==contStream){
+      if(contFuente){ try{ contFuente.disconnect() }catch(e){} }
+      contFuente=contAudioCtx.createMediaStreamSource(contStream)
+      contFuente.connect(contAnalizador)
+      contStreamVigilado=contStream
+    }
+    if(contAudioCtx.state==='suspended') contAudioCtx.resume().catch(()=>{})
+  }catch(e){ return }   // sin Web Audio no hay monitor: se sigue sin barge-in automático, como hoy
+  const buf=new Float32Array(contAnalizador.fftSize)
+  const t0=performance.now()
+  const tick=()=>{
+    if(!BARGE_IN_MONITOR_ACTIVO || !asistenteHablando()){ bargeInMonitorTimer=null; return }
+    contAnalizador.getFloatTimeDomainData(buf)
+    if(bargeInMonitorDet.procesar(energiaRms(buf), performance.now()-t0)){
+      bargeInMonitorTimer=null
+      detenerAudio()   // corta la reproducción y avanza audioTurnoActual (1.4): la frase interrumpida no puede volver a sonar
+      pararContinuo()  // suelta el stream que se mantuvo vivo solo para monitorear...
+      syncContinuo()   // ...y pide uno fresco para la captura real de lo que Robert está diciendo
+      return
+    }
+    bargeInMonitorTimer=setTimeout(tick,100)
+  }
+  bargeInMonitorTimer=setTimeout(tick,100)
+}
+// Con el flag apagado esto es EXACTAMENTE pararContinuo(): cero cambio de
+// comportamiento hoy. Con el flag prendido (post-M3), mantiene el mic vivo
+// en vez de soltarlo mientras Hermes habla.
+function pararOMantenerParaBargeIn(){
+  if(BARGE_IN_MONITOR_ACTIVO && modo==='cont' && contStream){ iniciarMonitorBargeIn() } else { pararContinuo() }
 }
 
 async function arrancarContinuo(){
@@ -1222,8 +1300,23 @@ micBtn.addEventListener('click',()=>{
   hintL.textContent = micEncendido?'Continuo · tocá el mic para apagar — escuchando…':'Continuo · mic apagado (tocá el mic)'
 })
 micBtn.addEventListener('mousedown',async e=>{
-  if(modo==='cont') return
-  e.preventDefault(); if(hablando)return; bargeIn(); hablando=true; micBtn.classList.add('rec'); setPill('escuchando')
+  // El guard `if(modo==='cont') return` que vivía ACÁ ARRIBA (antes de
+  // bargeIn()) dejaba el corte manual como código muerto en modo continuo
+  // (design.md D4): ni un mousedown sobre el mic podía cortar a Hermes
+  // mientras hablaba. Por eso bargeIn() se llama primero, en CUALQUIER modo.
+  //
+  // Lo que NO puede pasar en cualquier modo es arrancar una captura
+  // push-to-talk encima: en continuo el mic YA está grabando
+  // (arrancarContinuo()), y una segunda captura no tiene quien la pare —
+  // mouseup/mouseleave (más abajo) solo liberan en modo 'ptt' — quedaría
+  // viva hasta el timeout duro de 120s sin nada que la corte antes. Por eso
+  // el guard reaparece ACÁ, DESPUÉS de bargeIn(): no es el mismo guard que
+  // antes, es el opuesto en orden — deja pasar el corte y bloquea la
+  // captura. `debeArrancarCapturaPtt` (lib/mic-boton.js) es la pieza pura y
+  // testeada de esta decisión.
+  e.preventDefault(); if(hablando)return; bargeIn()
+  if(!debeArrancarCapturaPtt(modo)) return
+  hablando=true; micBtn.classList.add('rec'); setPill('escuchando')
   try{
     micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})
     if(!hablando){pararMic();return}
