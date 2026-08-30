@@ -76,6 +76,27 @@ modo continuo es viable.</p>
   <div class="res" id="r3"></div>
 </div>
 
+<!-- ── 4 · M3 ── -->
+<div class="paso">
+  <h2>4 · M3 — Umbral del barge-in <span class="duda">(dos fases, en este mismo dispositivo)</span></h2>
+  <p class="instr">El paso 3 mide cuánto eco entra. Este mide algo distinto: <b>qué separa tu
+  voz del eco</b>. Sin ese número, encender el corte automático es una adivinanza que
+  termina auto-interrumpiendo al agente.</p>
+  <p class="instr">Va en dos fases de 8 segundos, con el parlante sonando en las dos y el
+  micrófono abierto como lo abre la app (AEC de Chromium activada):</p>
+  <p class="instr">&nbsp;&nbsp;<b>A · callado</b> — dejá sonar y no hables. Sale el piso de eco.<br>
+  &nbsp;&nbsp;<b>B · hablando encima</b> — hablá normal por encima del audio. Sale tu nivel de voz.</p>
+  <p class="instr"><b>Importante</b>: correlo en el dispositivo donde vas a usar la voz. El
+  eco de un teléfono no se parece al de una laptop, así que el número es de ese aparato.</p>
+  <div class="fila">
+    <button id="b4a">Fase A · callado</button>
+    <button id="b4b" class="sec">Fase B · hablando encima</button>
+    <span id="e4" class="res"></span>
+  </div>
+  <div class="barra"><i id="bar4"></i><u id="marca4"></u></div>
+  <div class="res" id="r4"></div>
+</div>
+
 <!-- ── reporte ── -->
 <div class="paso">
   <h2>Reporte</h2>
@@ -107,7 +128,7 @@ function pct(xs, p){
 const dB = x => x>0 ? (20*Math.log10(x)).toFixed(1)+' dBFS' : '-inf'
 const n5 = x => x.toFixed(5)
 
-for(const i of [1,2,3]) $('marca'+i).style.left = (UMBRAL/ESCALA*100)+'%'
+for(const i of [1,2,3,4]) $('marca'+i).style.left = (UMBRAL/ESCALA*100)+'%'
 
 /**
  * Abre el micrófono y muestrea energía RMS cada 100 ms — el mismo período que
@@ -263,6 +284,59 @@ async function medirEco(aec){
 $('b3a').onclick = () => medirEco(true)
 $('b3b').onclick = () => medirEco(false)
 
+/* ── 4 · M3 ──
+   El paso 3 mide cuánto eco entra. Este mide qué SEPARA la voz del eco, que es
+   otra cosa: se necesitan las dos fases sobre el mismo parlante y el mismo
+   micrófono, porque el umbral que sale es de ese aparato y no viaja. */
+async function medirM3(hablando){
+  const btn = hablando ? $('b4b') : $('b4a')
+  btn.disabled = true
+  try{
+    const salida = new (window.AudioContext||window.webkitAudioContext)()
+    let parar, audioEl
+    if(wavCargado){
+      audioEl = new Audio(wavCargado); audioEl.loop = true; audioEl.volume = 1
+      await audioEl.play(); parar = () => audioEl.pause()
+    } else {
+      parar = sonarSintetico(salida, 12)
+    }
+    await new Promise(r=>setTimeout(r,400))   // que converja la AEC
+    // Mismas restricciones que abre la app: `{audio:true}` = AEC/NS/AGC on.
+    const r = await medir({ ms:8000, constraints:true, barra:$('bar4'), estado:$('e4'),
+                            alTerminar: x => datos[hablando ? 'm3Voz' : 'm3Eco'] = x })
+    parar(); salida.close()
+    pintarM3()
+  }catch(e){ $('r4').innerHTML = `<span class="mal">error: ${e.message}</span>` }
+  btn.disabled = false
+}
+
+function pintarM3(){
+  const eco = datos.m3Eco, voz = datos.m3Voz
+  let out = ''
+  if(eco) out += `<b>A · callado</b> — piso de eco: p50 ${n5(eco.p50)} · p95 ${n5(eco.p95)} · max ${n5(eco.max)}\n`
+  if(voz) out += `<b>B · hablando</b> — tu voz: p50 ${n5(voz.p50)} · p95 ${n5(voz.p95)} · max ${n5(voz.max)}\n`
+  if(!eco || !voz){ $('r4').innerHTML = out + `<span class="duda">Faltan las dos fases para poder recomendar nada.</span>`; return }
+
+  // El umbral va sobre el TECHO del eco, no sobre su mediana: lo que dispara un
+  // falso corte es el pico, no el promedio. Y por debajo de la voz con margen.
+  const piso = eco.p95, techoEco = eco.max, vozTipica = voz.p50
+  const sugerido = Math.max(techoEco * 1.5, piso * 3)
+  const margen = vozTipica / sugerido
+
+  out += `\nseparación voz/eco: ${(vozTipica / Math.max(techoEco, 1e-6)).toFixed(1)}× sobre el pico de eco\n`
+  out += `umbral sugerido: <b>${n5(sugerido)}</b> (1.5× el pico de eco)\n`
+  out += `margen hasta tu voz: ${margen.toFixed(1)}×\n\n`
+
+  if(margen >= 3) out += `<span class="ok">Sirve. El corte automático se puede encender con ese umbral: tu voz queda ${margen.toFixed(1)}× por encima de lo que el eco alcanza a hacer.</span>`
+  else if(margen >= 1.6) out += `<span class="duda">Justo. Funciona pero sin holgura: conviene exigir más frames sostenidos (400-500ms en vez de 300) para que un pico aislado no corte.</span>`
+  else out += `<span class="mal">No alcanza. El eco llega demasiado cerca de tu voz en este dispositivo; encender el corte automático lo haría auto-interrumpirse. Hace falta bajar el volumen, alejar el micrófono, o anti-eco propio acá.</span>`
+
+  if(eco.max >= sugerido) out += `\n\n<span class="duda">Ojo: hubo al menos un pico de eco (${n5(eco.max)}) que alcanza el umbral sugerido. Por eso el corte exige voz SOSTENIDA y no un frame suelto.</span>`
+  $('r4').innerHTML = out
+}
+$('b4a').onclick = () => medirM3(false)
+$('b4b').onclick = () => medirM3(true)
+
 /* ── reporte ── */
 function bloque(nombre, r){
   if(!r) return `${nombre}: (sin medir)`
@@ -291,12 +365,16 @@ ${bloque('2 VOZ', datos.voz)}
 ${bloque('3 ECO con AEC (default app)', datos.ecoAec)}
 
 ${bloque('3 ECO sin AEC', datos.ecoSinAec)}
+
+${bloque('4 M3-A eco con el parlante sonando (callado)', datos.m3Eco)}
+
+${bloque('4 M3-B tu voz encima del parlante', datos.m3Voz)}
 `
 }
 $('copiar').onclick = () => { $('out').select(); document.execCommand('copy'); $('copiar').textContent='Copiado'
   setTimeout(()=>$('copiar').textContent='Copiar reporte',1200) }
 $('reset').onclick = () => { for(const k in datos) delete datos[k]
-  for(const i of [1,2,3]){ $('r'+i).innerHTML=''; delete $('r'+i).dataset.prev }
+  for(const i of [1,2,3,4]){ $('r'+i).innerHTML=''; delete $('r'+i).dataset.prev }
   volcarReporte() }
 volcarReporte()
 </script>
