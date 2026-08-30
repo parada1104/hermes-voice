@@ -1,0 +1,554 @@
+{
+  "fecha": "2026-08-29",
+  "provider": "nan-builders",
+  "modelo": "qwen3.8-flash",
+  "turnos": [
+    {
+      "id": "delegar-vault-1",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Con gusto, señor. Lo registro ahora mismo en el vault.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_3a2527aba0c6498eaf2bbab4",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Registrá en el vault que Robert terminó de escribir el informe de gastos de agosto.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 1838,
+      "totalMs": 2184
+    },
+    {
+      "id": "delegar-trello-1",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Voy a revisar el tablero de Trello, señor.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_a3038fc67af64c28aa26ceac",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Revisá el tablero de Trello y listá las tareas nuevas asignadas a Robert (usuario \\\"mí\\\"/miembro actual). Indicá nombre de la tarea, lista/tablero, fecha de creación y vencimiento si existe. Si no hay tareas nuevas, confirmalo explícitamente.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 1775,
+      "totalMs": 2599
+    },
+    {
+      "id": "delegar-notas-1",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "No la tengo a mano en esta conversación, señor; déjame buscarla en sus notas.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_b779cb5d662e427498d3dffa",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Buscá en el vault/notes de Robert la contraseña del router de casa (wifi/router doméstico). Revisá archivos de notas, credenciales, inventarios o similares que estén accesibles. Si la encontrás, devolvé la contraseña exacta y en qué archivo está. Si no la encontrás, decilo explícitamente y listá los archivos donde buscaste para poder sugerir dónde registrarla.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 3085,
+      "totalMs": 4094
+    },
+    {
+      "id": "delegar-repo-1",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Con gusto, señor. Le pido al agente que revise el repositorio hermes-voice y verifique si hay tests rotos.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_ad30c5a50e274a12b683733f",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Revisá el repositorio hermes-voice: corré la suite de tests (o revisá su estado) e informame si hay tests rotos, cuáles son y por qué fallan.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 2081,
+      "totalMs": 2772
+    },
+    {
+      "id": "delegar-pantalla-1",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Un momento, señor; voy a revisar la pantalla ahora mismo.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_d7543eb7f5ec4a4cb5d54dfa",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Mirá la pantalla actual y decime si el build que se estaba corriendo terminó. Informá el estado: en ejecución, terminado con éxito o con errores, citando lo que se vea en terminal/IDE.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 1796,
+      "totalMs": 2779
+    },
+    {
+      "id": "delegar-continuidad-1",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Perfecto, se lo paso ahora mismo al agente para que lo agende.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_66173e0daffc4975bffc8a80",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Agendar en el calendario/vault de Robert un turno con el dentista el lunes a las 9:00 AM. Confirmar dónde quedó registrado.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 6991,
+      "totalMs": 7452
+    },
+    {
+      "id": "delegar-continuidad-2",
+      "rama": "delegar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Perfecto, señor. Se la paso al agente ahora mismo para que la registre.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_07b78cce50cb455da7643a2a",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Registrar en el vault/lista de compras una nueva lista con los siguientes ítems a comprar: 1) Café, 2) Filtros, 3) Pilas AA. Confirmar que quedaron registrados.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 1930,
+      "totalMs": 2593
+    },
+    {
+      "id": "responder-hora-1",
+      "rama": "responder",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "No tengo acceso a un reloj en tiempo real, señor, pero si quiere puedo consultarlo revisando la hora del sistema. ¿Lo hago?"
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 2086,
+      "totalMs": 2141
+    },
+    {
+      "id": "responder-identidad-1",
+      "rama": "responder",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Soy JARVIS, su capa conversacional de voz, señor. Me encargo de hablar con usted y coordinar con los agentes cuando haga falta operar sobre archivos, sistemas o proyectos."
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 2965,
+      "totalMs": 3193
+    },
+    {
+      "id": "responder-charla-1",
+      "rama": "responder",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Con gusto, señor. Aquí estoy para lo que necesite."
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 11066,
+      "totalMs": 11211
+    },
+    {
+      "id": "responder-contexto-1",
+      "rama": "responder",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Tres notas pendientes de esta semana, señor."
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 1853,
+      "totalMs": 1890
+    },
+    {
+      "id": "cancelar-tarea-1",
+      "rama": "cancelar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Ya la cancelo, señor.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_1b915f965963419da230ba00",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Robert pide cancelar la tarea que estaba corriendo en este momento (la última activa/reciente). Identifícala y detenela, y confirmá el estado final de esa tarea.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 2008,
+      "totalMs": 2840
+    },
+    {
+      "id": "cancelar-espera-1",
+      "rama": "cancelar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Entendido, señor, lo dejo ahí. Cuando guste retomarlo, aquí estoy."
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 3439,
+      "totalMs": 3612
+    },
+    {
+      "id": "cancelar-general-1",
+      "rama": "cancelar",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Entendido, señor. Voy a cancelar lo que le pasamos al agente hace un momento.\n\n",
+            "tool_calls": [
+              {
+                "id": "call_daa5b17898334b0e8c657f0b",
+                "type": "function",
+                "function": {
+                  "name": "delegar_a_orca",
+                  "arguments": "{\"pedido\": \"Robert pide cancelar la última solicitud/tarea que se le asignó al agente hace poco tiempo. Identificá esa tarea y cancelala. Confirmame qué era y si quedó cancelada correctamente.\"}"
+                }
+              }
+            ]
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 2186,
+      "totalMs": 3230
+    },
+    {
+      "id": "nada-relleno-1",
+      "rama": "nada",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Como usted quiera, señor. Aquí estoy cuando lo necesite."
+          }
+        },
+        "reintento": {
+          "message": {
+            "content": "No había ninguna acción pendiente, señor: usted dijo \"dejalo\" y yo simplemente confirmé. Todo correcto.",
+            "role": "assistant",
+            "provider_specific_fields": {
+              "refusal": null
+            }
+          }
+        },
+        "rescate": null
+      },
+      "ttfbMs": 2560,
+      "totalMs": 4446
+    },
+    {
+      "id": "nada-relleno-2",
+      "rama": "nada",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Como usted quiera, señor. Aquí estoy cuando lo necesite."
+          }
+        },
+        "reintento": {
+          "message": {
+            "content": "No había ninguna acción pendiente, señor; simplemente quedo a su disposición.",
+            "role": "assistant",
+            "provider_specific_fields": {
+              "refusal": null
+            }
+          }
+        },
+        "rescate": null
+      },
+      "ttfbMs": 2510,
+      "totalMs": 5978
+    },
+    {
+      "id": "nada-silencio-1",
+      "rama": "nada",
+      "bruto": {
+        "inicial": {
+          "message": {
+            "role": "assistant",
+            "content": "Buenas noches, señor. Aquí estoy en modo escucha cuando lo necesite."
+          }
+        },
+        "reintento": null,
+        "rescate": null
+      },
+      "ttfbMs": 2378,
+      "totalMs": 2495
+    }
+  ],
+  "metricas": {
+    "totalTurnos": 17,
+    "porRama": {
+      "responder": {
+        "correctos": 4,
+        "total": 4,
+        "precision": 1
+      },
+      "delegar": {
+        "correctos": 7,
+        "total": 7,
+        "precision": 1
+      },
+      "cancelar": {
+        "correctos": 0,
+        "total": 3,
+        "precision": 0
+      },
+      "nada": {
+        "correctos": 0,
+        "total": 3,
+        "precision": 0
+      }
+    },
+    "reparaciones": 2,
+    "formatoValidoRatio": 1,
+    "ttfb": {
+      "p50": 2186,
+      "p90": 6991
+    },
+    "detalle": [
+      {
+        "id": "delegar-vault-1",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "delegar-trello-1",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "delegar-notas-1",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "delegar-repo-1",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "delegar-pantalla-1",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "delegar-continuidad-1",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "delegar-continuidad-2",
+        "esperada": "delegar",
+        "obtenida": "delegar",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "responder-hora-1",
+        "esperada": "responder",
+        "obtenida": "responder",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "responder-identidad-1",
+        "esperada": "responder",
+        "obtenida": "responder",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "responder-charla-1",
+        "esperada": "responder",
+        "obtenida": "responder",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "responder-contexto-1",
+        "esperada": "responder",
+        "obtenida": "responder",
+        "correcto": true,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "cancelar-tarea-1",
+        "esperada": "cancelar",
+        "obtenida": "delegar",
+        "correcto": false,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "cancelar-espera-1",
+        "esperada": "cancelar",
+        "obtenida": "responder",
+        "correcto": false,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "cancelar-general-1",
+        "esperada": "cancelar",
+        "obtenida": "delegar",
+        "correcto": false,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      },
+      {
+        "id": "nada-relleno-1",
+        "esperada": "nada",
+        "obtenida": "responder",
+        "correcto": false,
+        "reparaciones": 1,
+        "datosIncompletos": false
+      },
+      {
+        "id": "nada-relleno-2",
+        "esperada": "nada",
+        "obtenida": "responder",
+        "correcto": false,
+        "reparaciones": 1,
+        "datosIncompletos": false
+      },
+      {
+        "id": "nada-silencio-1",
+        "esperada": "nada",
+        "obtenida": "responder",
+        "correcto": false,
+        "reparaciones": 0,
+        "datosIncompletos": false
+      }
+    ]
+  }
+}

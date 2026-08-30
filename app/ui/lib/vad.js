@@ -70,6 +70,48 @@ class DetectorVoz {
   }
 }
 
+/**
+ * Monitor de voz SOSTENIDA para el barge-in durante la reproducción (D4).
+ *
+ * DetectorVoz decide CUÁNDO CERRAR una captura: espera silencio sostenido y
+ * recién ahí corta. El barge-in necesita lo opuesto — reaccionar EN CUANTO
+ * hay voz sostenida, sin esperar a que Robert se calle. Por eso es una clase
+ * aparte y no un modo de DetectorVoz: comparten el mismo umbral de energía,
+ * pero la semántica de "cuándo actuar" es la contraria.
+ *
+ * Se midió un pico aislado de 0.115 RMS al arrancar el audio (ver
+ * mediciones.md, M3): una sola muestra por encima del umbral NUNCA alcanza
+ * para disparar, o el propio arranque del audio se autointerrumpiría. Recién
+ * cuenta cuando el mismo tramo de voz se sostiene por `minVozMs` seguidos —
+ * igual que `DetectorVoz` exige para no descartar una frase por ruido corto.
+ */
+class MonitorVozSostenida {
+  constructor(opts = {}) {
+    this.cfg = { umbral: POR_DEFECTO.umbral, minVozMs: POR_DEFECTO.minVozMs, ...opts }
+    this.reiniciar()
+  }
+
+  reiniciar() {
+    this.vozMs = 0
+    this.ultimoMs = null
+  }
+
+  // Devuelve true en la muestra donde la voz sostenida cruza minVozMs. Una
+  // sola muestra nunca dispara: el primer paso siempre vale 0ms (no hay
+  // "antes" con qué medir la duración), así que hace falta más de un frame.
+  procesar(energia, ahoraMs) {
+    const paso = this.ultimoMs === null ? 0 : Math.max(0, ahoraMs - this.ultimoMs)
+    this.ultimoMs = ahoraMs
+
+    if (energia >= this.cfg.umbral) {
+      this.vozMs += paso
+    } else {
+      this.vozMs = 0   // la racha se corta: tiene que ser sostenida, no acumulada entre silencios
+    }
+    return this.vozMs >= this.cfg.minVozMs
+  }
+}
+
 // Energía RMS de un bloque de muestras en punto flotante (-1..1).
 function energiaRms(muestras) {
   if (!muestras || !muestras.length) return 0
@@ -78,4 +120,4 @@ function energiaRms(muestras) {
   return Math.sqrt(suma / muestras.length)
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { DetectorVoz, energiaRms, POR_DEFECTO }
+if (typeof module !== 'undefined' && module.exports) module.exports = { DetectorVoz, MonitorVozSostenida, energiaRms, POR_DEFECTO }
