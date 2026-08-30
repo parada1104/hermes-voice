@@ -125,15 +125,47 @@ A later run regresses if per-branch accuracy falls below baseline minus toleranc
 
 ## M3 — Barge-in energy threshold during playback
 
-**Status**: NOT RUN
+**Status**: RUN — 2026-08-30
 **Gates**: Slice 1's default-on (design decision D4)
-**What to measure**: the RMS threshold and sustained-frame count that separate
-Robert's voice from Hermes' own TTS coming back through the speakers, on the real
-speaker/microphone pair — the same way `app/ui/lib/vad.js:14-16` records its 0.02
-(silent room peak 0.00392, voice p50 0.05585).
-**Why it is not optional**: `speech.frase` calls `pararContinuo()`
-(`app/ui/index.html:927`), which releases the microphone stream (`:1198`), so
-barge-in requires holding the mic open during playback — which is exactly the
-self-echo the 600/1200 ms cooldown at `:963` was added to avoid. Until this is
-measured, the playback monitor ships disabled by default rather than shipping a
-self-triggering guess.
+**Result**: **PASS with the current constants** → `BARGE_IN_MONITOR_ACTIVO` flips to `true`
+**Device**: MacBook Pro M1, Chrome 150, built-in speaker + microphone, `sr=48000`,
+`aec=true ns=true agc=true` (the app's own `getUserMedia({audio:true})` defaults)
+
+### Result
+
+Both phases ran 8 s with the speaker playing, mic open with the app's constraints.
+
+| Phase | vozMs @ `umbral 0.02` | Verdict at `minVozMs 300` |
+|---|---|---|
+| **A — echo only, user silent** | **105 ms** | does not fire, **2.9× short** |
+| **B — user speaking over the speaker** | **4197 ms** | fires, **14× over** |
+
+Sustained levels: voice p50 `0.02094` against echo p95 `0.00211` = **9.9× separation**.
+Echo p50 `0.00168`, max `0.05015` in a **single** frame out of 77 (`cruces = 1`).
+
+### The reading, and a corrected formula
+
+The first version of the diagnostic's verdict computed a suggested threshold from
+`eco.max` and returned **red** on data that actually passes. That was wrong twice
+over:
+
+- `eco.max` is normally **one** frame — the transient when playback starts. Using
+  it as the basis pushes the threshold (`0.075`) above the user's own voice
+  (`0.021`), which is absurd.
+- Comparing percentiles is also wrong: in phase B roughly half the window is gaps
+  between words, so its p50 understates the voice.
+
+The verdict now reads `vozMs`, which is **what the monitor actually does** — it
+already integrates threshold and sustained time. If the echo cannot accumulate
+`minVozMs`, it cannot fire. That is the whole question.
+
+The isolated `0.05015` spike is exactly why the monitor requires *sustained* voice
+instead of a single frame. One frame is 100 ms; it needs 300.
+
+### Scope of this result
+
+**This number belongs to this device.** A phone holds its speaker centimetres from
+its microphone and runs a different AEC. Re-run M3 on each device before enabling
+the monitor there — see the vault card
+`2026-08-28-umbral-adaptativo-por-microfono`, which this measurement promotes from
+optional to required once the UI is reachable from other devices.

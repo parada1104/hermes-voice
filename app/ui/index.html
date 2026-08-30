@@ -1163,7 +1163,9 @@ function vigilarSilencio(recorder){
 // Por eso el monitor entero arranca APAGADO. Encenderlo antes de medir el
 // umbral real en el hardware de Robert (M3, mediciones.md, tasks.md 1.7)
 // sería enviar una adivinanza que puede autodispararse con el propio TTS.
-const BARGE_IN_MONITOR_ACTIVO = false   // default OFF — pendiente M3 (mediciones.md); NO tocar sin ese resultado
+const BARGE_IN_MONITOR_ACTIVO = true   // M3 corrida 2026-08-30 en este equipo: el eco junta 105ms
+                                       // contra los 300 que exige el corte (2.9x de holgura) y la voz 4197ms.
+                                       // El numero es DE ESTE DISPOSITIVO: re-medir antes de encenderlo en otro.
 
 let bargeInMonitorTimer=null, bargeInMonitorDet=null
 // Solo-monitor: nada de MediaRecorder, parciales ni STT acá. Únicamente mide

@@ -317,21 +317,36 @@ function pintarM3(){
   if(voz) out += `<b>B · hablando</b> — tu voz: p50 ${n5(voz.p50)} · p95 ${n5(voz.p95)} · max ${n5(voz.max)}\n`
   if(!eco || !voz){ $('r4').innerHTML = out + `<span class="duda">Faltan las dos fases para poder recomendar nada.</span>`; return }
 
-  // El umbral va sobre el TECHO del eco, no sobre su mediana: lo que dispara un
-  // falso corte es el pico, no el promedio. Y por debajo de la voz con margen.
-  const piso = eco.p95, techoEco = eco.max, vozTipica = voz.p50
-  const sugerido = Math.max(techoEco * 1.5, piso * 3)
-  const margen = vozTipica / sugerido
+  // El veredicto se lee de `vozMs`, que es LO QUE EL MONITOR HACE, y no de un
+  // cociente de percentiles.
+  //
+  // Una versión anterior calculaba el umbral desde `eco.max` y daba rojo con
+  // datos que en realidad pasan: ese max suele ser UN frame —el transitorio del
+  // arranque del audio— y usarlo de base tira el umbral por encima de la propia
+  // voz. Comparar percentiles tampoco sirve: en la fase B la mitad de la ventana
+  // son huecos entre palabras, así que su p50 subestima la voz.
+  //
+  // `vozMs` ya integra umbral y tiempo sostenido, que es exactamente la decisión
+  // del monitor: si el eco no junta `minVozMs`, no corta.
+  const ecoMs = eco.vozMsTotal, vozMs = voz.vozMsTotal
+  const holguraEco = MIN_VOZ / Math.max(ecoMs, 1)
+  const holguraVoz = vozMs / MIN_VOZ
 
-  out += `\nseparación voz/eco: ${(vozTipica / Math.max(techoEco, 1e-6)).toFixed(1)}× sobre el pico de eco\n`
-  out += `umbral sugerido: <b>${n5(sugerido)}</b> (1.5× el pico de eco)\n`
-  out += `margen hasta tu voz: ${margen.toFixed(1)}×\n\n`
+  out += `\ncon umbral ${UMBRAL} y ${MIN_VOZ}ms sostenidos, que es lo que el monitor exige:\n`
+  out += `  eco solo:  ${ecoMs} ms → ${ecoMs >= MIN_VOZ ? '<span class="mal">DISPARA</span>' : '<span class="ok">no dispara</span>'} (le falta ${holguraEco.toFixed(1)}×)\n`
+  out += `  tu voz:    ${vozMs} ms → ${vozMs >= MIN_VOZ ? '<span class="ok">dispara</span>' : '<span class="mal">NO DISPARA</span>'} (le sobra ${holguraVoz.toFixed(1)}×)\n`
+  out += `nivel sostenido: voz p50 ${n5(voz.p50)} contra eco p95 ${n5(eco.p95)} = ${(voz.p50/Math.max(eco.p95,1e-6)).toFixed(1)}× de separación\n\n`
 
-  if(margen >= 3) out += `<span class="ok">Sirve. El corte automático se puede encender con ese umbral: tu voz queda ${margen.toFixed(1)}× por encima de lo que el eco alcanza a hacer.</span>`
-  else if(margen >= 1.6) out += `<span class="duda">Justo. Funciona pero sin holgura: conviene exigir más frames sostenidos (400-500ms en vez de 300) para que un pico aislado no corte.</span>`
-  else out += `<span class="mal">No alcanza. El eco llega demasiado cerca de tu voz en este dispositivo; encender el corte automático lo haría auto-interrumpirse. Hace falta bajar el volumen, alejar el micrófono, o anti-eco propio acá.</span>`
+  if(ecoMs >= MIN_VOZ)
+    out += `<span class="mal">No sirve tal cual: el eco solo ya junta ${ecoMs}ms y dispararía el corte — el agente se auto-interrumpiría. Subir minVozMs por encima de ${ecoMs}ms, bajar el volumen, o anti-eco propio en este dispositivo.</span>`
+  else if(vozMs < MIN_VOZ)
+    out += `<span class="mal">No sirve tal cual: tu voz junta ${vozMs}ms y no llega a ${MIN_VOZ}. El corte no dispararía nunca. Bajar el umbral o acercar el micrófono.</span>`
+  else if(holguraEco >= 2)
+    out += `<span class="ok">Sirve con las constantes actuales. El eco se queda ${holguraEco.toFixed(1)}× corto de disparar y tu voz sobra ${holguraVoz.toFixed(1)}×. Se puede encender el corte automático en este dispositivo.</span>`
+  else
+    out += `<span class="duda">Justo: el eco llega a ${ecoMs}ms de los ${MIN_VOZ} que hacen falta. Funciona pero sin holgura; conviene subir minVozMs a ~${Math.ceil(ecoMs*2/50)*50}ms acá.</span>`
 
-  if(eco.max >= sugerido) out += `\n\n<span class="duda">Ojo: hubo al menos un pico de eco (${n5(eco.max)}) que alcanza el umbral sugerido. Por eso el corte exige voz SOSTENIDA y no un frame suelto.</span>`
+  if(eco.cruces > 0) out += `\n\n<span class="duda">Nota: ${eco.cruces} frame(s) de eco pasaron el umbral (pico ${n5(eco.max)}). Aislados no importan —por eso el corte exige voz sostenida y no un frame suelto—; importarían si sumaran ${MIN_VOZ}ms.</span>`
   $('r4').innerHTML = out
 }
 $('b4a').onclick = () => medirM3(false)
